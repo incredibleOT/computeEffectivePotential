@@ -1,3 +1,4 @@
+##Extends of the lattice
 L0                16
 L1                16
 L2                16
@@ -8,6 +9,8 @@ L3                32
 #r                  0.5
 #rho                1
 
+##set scan_cutoff_in_GeV to 1 if you want to scan. If zero, cutoff_in_GeV will be used
+##scan_xxx is set, xxx_min/max/step are used
 scan_cutoff_in_GeV  0
 cutoff_in_GeV      400
 cutoff_in_GeV_min     200
@@ -16,6 +19,7 @@ cutoff_in_GeV_step     100
 
 
 
+## as cutoff
 ## 500/246=2.0325203252,   175/246=0.711382113821
 #scan_y_t           1
 y_t                0.711382113821
@@ -23,19 +27,22 @@ y_t                0.711382113821
 #y_t_max           2
 #y_t_step          0.2
 
+## yRatio determines ratio y_t/y_b
 #scan_yRatio        1
 yRatio             1
 #yRatio_min        1
 #yRatio_max        2
 #yRatio_step       0.2
 
+## term in action lambda_6*phi^6
 scan_lambda_6      0
 lambda_6           0.0
 lambda_6_min      0.010
 lambda_6_max      0.010
 lambda_6_step     0.001
 
-##0:use scan_lambda and so on,  1: use criterion: lambda=-lambda_6(30/40+24*P_G)
+##determin_lambda=0:use scan_lambda and so on,  
+##                1: use criterion: lambda=-lambda_6(30/40+24*P_G)
 determine_lambda   0
 scan_lambda       1
 lambda             0
@@ -43,5 +50,10 @@ lambda_min        0
 lambda_max        0.015
 lambda_step       0.001
 
+##how to iterate the potential to get the mass
+##0: take the approach as in P.G. thesis and replace the masses in the propagatorsums by hand
+##1: take as masses in the denom:(m_0^2+12lambda v^2 + 30lambda_6 v^4 for higgs)
+##   and mo^2+4*lambda*v^2+6*lambda_6*v^4 for goldstones) 
 iteration_scheme   1
+## output file
 OutputFile         output/reproduce_fig_6.15_propMassfromM0.txt 
