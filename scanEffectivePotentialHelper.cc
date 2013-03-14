@@ -56,6 +56,24 @@ void prepareParameterMaps( std::map< std::string, double > &paraD, std::map< std
 	paraI["iteration_scheme"]=-1;
 	
 	paraS["OutputFile"] = "";
+	
+	//whether after determining the mass, the first derivative of the CEP schould be scanned
+	//will test, whether a second extremum occurs and set the 
+	paraI["scan_first_derivative"]=0;
+	paraD["scan_derivative_min"]=-1.0;
+	paraD["scan_derivative_max"]=-1.0;
+	paraD["scan_derivative_step"]=-1.0;
+	
+	//whether the derivative should be printed to a file
+	paraI["print_derivative_scan"]=0;
+	//name will be: derivativeFileBody_ZZZZZ.txt
+	//ZZZZZ will contain all quantities that were scanned
+	//e.g.: _cut_x.x_; 
+	paraS["derivativeFileBody"]="";
+	
+	
+	
+	
 }
 
 
@@ -91,10 +109,10 @@ bool loadParameterMapsFromFile( std::map< std::string, double > &paraD, std::map
 		getline(inputFile, line);
 		if(line.size()==0 || line[0] =='#' || line.find_first_not_of(' ') == std::string::npos){ continue; }
 		std::istringstream strm(line);
-		strm >> word;
-		if( paraI.find(word) != paraI.end() ){ if(!(strm >> paraI[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; return false; } }
-		else if( paraD.find(word) != paraD.end() ){ if(!(strm >> paraD[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; return false; } }
-		else if( paraS.find(word) != paraS.end() ){ if(!(strm >> paraS[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; return false; } }
+		if(!(strm >> word)){ continue; }
+		if( paraI.find(word) != paraI.end() ){ if(!(strm >> paraI[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; std::cerr <<"actual line: " <<std::endl << line <<std::endl; return false; } }
+		else if( paraD.find(word) != paraD.end() ){ if(!(strm >> paraD[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; std::cerr <<"actual line: " <<std::endl << line <<std::endl; return false; } }
+		else if( paraS.find(word) != paraS.end() ){ if(!(strm >> paraS[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; std::cerr <<"actual line: " <<std::endl << line <<std::endl; return false; } }
 		else{ std::cerr <<"Warning, there is no parameter called \"" <<word <<"\""<<std::endl; return false;}
 	}
 	inputFile.close(); inputFile.clear();
@@ -118,20 +136,32 @@ bool loadParameterMapsFromFile( std::map< std::string, double > &paraD, std::map
 		getline(inputFile, line);
 		if(line.size()==0 || line[0] =='#' || line.find_first_not_of(' ') == std::string::npos){ continue; }
 		std::istringstream strm(line);
-		strm >> word;
+		if(!(strm >> word)){ continue; }
 		if( paraI.find(word) != paraI.end() )
 		{ 
-			if(!(strm >> paraI[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; return false; }
+			if(!(strm >> paraI[word]))
+			{
+				std::cerr <<"Error loading value of " <<word <<std::endl; 
+				std::cerr <<"actual line: " <<std::endl << line <<std::endl; return false; 
+			}
 			else{ paraIsSet[word]=true;}
 		}
 		else if( paraD.find(word) != paraD.end() )
 		{ 
-			if(!(strm >> paraD[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; return false; }
+			if(!(strm >> paraD[word]))
+			{
+				std::cerr <<"Error loading value of " <<word <<std::endl; 
+				std::cerr <<"actual line: " <<std::endl << line <<std::endl; return false; 
+			}
 			else{ paraIsSet[word]=true;}
 		}
 		else if( paraS.find(word) != paraS.end() )
 		{ 
-			if(!(strm >> paraS[word])){ std::cerr <<"Error loading value of " <<word <<std::endl; return false; }
+			if(!(strm >> paraS[word]))
+			{
+				std::cerr <<"Error loading value of " <<word <<std::endl; 
+				std::cerr <<"actual line: " <<std::endl << line <<std::endl; return false; 
+			}
 			else{ paraIsSet[word]=true;}
 		}
 		else{ std::cerr <<"Warning, there is no parameter called \"" <<word <<"\""<<std::endl; return false;}
@@ -392,12 +422,49 @@ bool checkConsistencyOfParameters( std::map< std::string, double > &paraD, std::
 		return false;	
 	}
 	//OutputFile
-	if( !paraIsSet["OutputFile"] )
+	if( !paraIsSet["OutputFile"] || paraS["OutputFile"]=="" )
 	{
 		std::cerr <<"OutputFile not set" <<std::endl;
 		return false;
 	}
-	
+	//scan_first_derivative
+	if( paraIsSet["scan_first_derivative"] && paraI["scan_first_derivative"]!=0 )
+	{
+		if( !( paraIsSet["scan_derivative_min"] && paraIsSet["scan_derivative_max"] && paraIsSet["scan_derivative_step"] ) )
+		{
+			std::cerr <<"No scanrange in scan_derivative given" <<std::endl;
+			return false;
+		}
+		if( paraD["scan_derivative_min"] >= paraD["scan_derivative_max"] || paraD["scan_derivative_step"] <= 0.0  )
+		{
+			std::cerr <<"Inconsistent scanning range in scan_derivative" <<std::endl;
+			return false;
+		}
+		if( paraD["scan_derivative_min"] <= 0.0  )
+		{
+			std::cerr <<"Cannot scan derivative for non-positive vev" <<std::endl;
+			return false;
+		}
+		//so far scan is only available for iteration_scheme=0
+		if( paraI["iteration_scheme"]!=0 )
+		{
+			std::cerr <<"scan_derivative only implemented for iteration_scheme=0" <<std::endl;
+			return false;
+		}
+	}
+	if( paraIsSet["print_derivative_scan"] && paraI["print_derivative_scan"]!=0 )
+	{
+		if(!paraIsSet["derivativeFileBody"] || paraS["derivativeFileBody"]=="")
+		{
+			std::cerr <<"No derivativeFileBody given to print derivative scan" <<std::endl;
+			return false;
+		}
+		if(!paraIsSet["scan_first_derivative"] || paraI["scan_first_derivative"]==0)
+		{
+			std::cerr <<"Output of derivative scan set, but no scan was set" <<std::endl;
+			return false;
+		}
+	}
 	return true;
 }
 
@@ -435,4 +502,41 @@ bool printResultsVectorToStream(const std::vector< resultForOutput > &results, s
 
 }
 
+
+
+int countNumberOfSignChanges(const std::map< double, double > &firstDerivative)
+{
+	//an exact zero also counts as signChange (even if its only a saddle point)
+	int result=0;
+	if(firstDerivative.empty() || firstDerivative.size()==1)
+	{
+		std::cerr <<"Error, empty map or only one element in countNumberOfSignchanges()"<<std::endl; return -1; 
+	}
+	std::map< double, double >::const_iterator iter=firstDerivative.begin();
+	int signDummy(0);
+	if( iter->second < 0.0 ){ signDummy=-1; }
+	else if( iter->second > 0.0 ){ signDummy=1; }
+	else{ signDummy=0; ++result; }
+	++iter;
+	while(iter!=firstDerivative.end())
+	{
+		if( iter->second < 0.0 )
+		{ 
+			if(signDummy==+1){ ++result; } 
+			signDummy=-1; 
+		}
+		else if( iter->second > 0.0 )
+		{ 
+			if(signDummy==-1){ ++result; }
+			signDummy=+1;
+		}
+		else
+		{
+			++result;
+			signDummy=0;
+		}
+		++iter;
+	}
+	return result;
+}
 

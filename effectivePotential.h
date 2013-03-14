@@ -5,6 +5,7 @@
 #include <complex>
 #include <cstdlib>
 #include <iostream>
+#include <map>
 #include <string>
 #include <utility>
 #include <vector>
@@ -60,6 +61,9 @@ class effectivePotential
 	
 	//sequence of m_0^2 and m_h^2 during the iteration
 	std::vector< double > m0Squared, mHSquared;
+	
+	//maxCount for scans of potential
+	static const int maxCount=10000;
 	
 	//================================
 	void setConstants(); //sets (rho, r, N_f and vev_In_GeV);
@@ -126,19 +130,19 @@ class effectivePotential
 	//uses the approach explained in the top 
 	double iterateMass_withM0inPropSumsAndBosonicDet(); //returns the absolout(!) change in m0^2
 	
-	//includes the bosonic determinant but takes the masses by hand
-	//NOTE stupid, since in this approach, the log of the det is independent of v and so there is no influence in the determinant 
-// 	double iterateMass_withMassInPropSumByHandAndBosonicDet(); //returns the absolout(!) change in m0^2 and mH^2
-		
 	//uses the approach from philipps thesis (replace masses in the propagatorsums by zero or the curvature for goldstone and higgs) and no determinant
 	double iterateMassDetermination_withMassInPropSumByHand(); //returns the sum of the absolut changes of m0Squared and mHSquared 
 	
-/*	//uses the last values of the masses and writes the potential and its first two derivatives to the stream
+	//uses the last values of the masses and writes the potential and its first two derivatives to the stream
 	bool plotPotentialToStream(double min, double max, double step, std::ostream &output, bool withInfo);
 	private:
 	bool fillVectorWithEigenvaluesAndPrefac( std::vector< std::pair< std::complex< double >, std::complex< double > > > &toBeFilled);
 	public:
-*/
+	
+	//scans only the first derivative of the potential in the given range (cheaper, since no log ;) )
+	//uses the last values of mHSquared and m0Squared
+	bool scanPotential_firstDerivative_withMassInPropSumByHand(double min, double max, double step, std::map< double, double > &result_U_p);
+
 };
 
 

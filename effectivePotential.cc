@@ -542,7 +542,7 @@ double effectivePotential::iterateMassDetermination_withMassInPropSumByHand()
 
 
 
-/*
+
 bool effectivePotential::fillVectorWithEigenvaluesAndPrefac( std::vector< std::pair< std::complex< double >, std::complex< double > > > &toBeFilled )
 {
 	if(y_t==-1.0 || y_b==-1.0)
@@ -576,17 +576,16 @@ bool effectivePotential::fillVectorWithEigenvaluesAndPrefac( std::vector< std::p
 	}
 	return true;
 }
-*/
 
 
 
-/*
+
+
 bool effectivePotential::plotPotentialToStream(double min, double max, double step, std::ostream &output, bool withInfo)
 {
 	//U=U_f + phi^2*[m0^2/2 + 6*lambda*(P_H+P_G) + lambda_6*(45*P_H^2+54*P_H*P_G+45*P_G^2)] + phi^4[lambda + lambda_6*(15*P_h+9*P_G)] + phi^6*lambda_6
 	//U=U_f + phi^2*A + phi^4*B + phi^6*lambda_6
 	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no masses available" <<std::endl; return false; }
-	int maxCount=10000;
 	if((max-min)/step > maxCount || (max-min) < 0.0 || step <=0.0  )
 	{
 		std::cerr <<"Error, inconstistent range or to many steps. maxCount in effectivePotential::plotPotentialToStream is " <<maxCount <<std::endl;
@@ -666,6 +665,78 @@ bool effectivePotential::plotPotentialToStream(double min, double max, double st
 	output.precision(oldPrec);
 	return true;
 }
-*/
+
+
+
+bool effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand(double min, double max, double step, std::map< double, double > &result_U_p)
+{
+	// computes the first derivative of the potential in a range of v from min to max in steps of ...(guess!)
+	//U_p = U_fp[v] + m0Squared*v + 4*lambda*v^3 + 6*lambda_6*v^5 + 
+	//    + 2*v*(6*lambda*(P_H + P_G) + lambda_6*(45*P_G^2 + 54*P_G*P_H + 45*P_H^2) ) + 
+	//    + 4*v^3*lambda_6*(15*P_H + 9*P_G)
+	//    == U_fp[v] + v*A + v^3*B + 6*lambda_6*v^5
+	//
+	//U_fp[v] = -2*N_f/V * 2*y_t * sum_p[ re((1-0.5*rho*nu)/(nu+y_t*v*(1-0.5*rho*nu))) ] + (same with y_b) 
+	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no masses available" <<std::endl; return false; }
+	
+	result_U_p.clear();
+	
+	//consistency
+	if((max-min)/step > maxCount || (max-min) < 0.0 || step <=0.0  )
+	{
+		std::cerr <<"Error, inconstistent range or to many steps. maxCount in effectivePotential::plotPotentialToStream is " <<maxCount <<std::endl;
+		return false;
+	}
+	//
+	
+	double last_m0Squared=*(m0Squared.rbegin());
+	double last_mHSquared=*(mHSquared.rbegin());
+	double HiggsPropagatorSum=computePropagatorSum(last_mHSquared);
+	
+	// contains: < nu, (1-1/(2*rho))nu >, nu are the eigenvalues of the overlap operator
+	std::vector< std::pair< std::complex< double >, std::complex< double > > > eigenvaluesAndPrefactor;
+	bool withFermions(y_t!=0.0 || y_b!=0.0);
+	if( withFermions)
+	{
+		if(!fillVectorWithEigenvaluesAndPrefac(eigenvaluesAndPrefactor))
+		{
+			std::cerr <<"Error, generating Eigenvalues" <<std::endl;
+			return false;
+		}
+	}
+	double fermionicPrefactor(-2.0*N_f/(L0*L1*L2*L3));
+	//A=2*(6*lambda*(P_H + P_G) + lambda_6*(45*P_G^2 + 54*P_G*P_H + 45*P_H^2) ) + m0Squared
+	//B=4*lambda_6*(15*P_H + 9*P_G) + 4*lambda
+	double A( last_m0Squared + 12.0*lambda*(HiggsPropagatorSum + propagatorSumWithZeroMass)
+	      + lambda_6*(90.0*HiggsPropagatorSum*HiggsPropagatorSum + 108.0*HiggsPropagatorSum*propagatorSumWithZeroMass + 90.0*propagatorSumWithZeroMass*propagatorSumWithZeroMass) );
+	double B(4.0*lambda + lambda_6*(60.0*HiggsPropagatorSum + 36.0*propagatorSumWithZeroMass) );
+	double phi(min);
+	double U_p(0.0);
+	std::map< double, double >::iterator hintIter=result_U_p.begin(); //faster insertion
+	while(phi <= max)
+	{
+		U_p=0.0;
+		//fermionic contribution
+		if(withFermions)
+		{
+			for(std::vector< std::pair< std::complex< double >, std::complex< double > > >::const_iterator iter=eigenvaluesAndPrefactor.begin(); iter!=eigenvaluesAndPrefactor.end(); ++iter)
+			{
+				//a clearer way can be found in effectivePotential::getFermionicContribution()
+				std::complex< double > z_t(iter->first + y_t*phi*iter->second);
+				std::complex< double > z_b(iter->first + y_b*phi*iter->second);
+				U_p += 2.0*y_t*real( iter->second / z_t ) + 2.0*y_b*real( iter->second / z_b );
+			}
+			U_p*=fermionicPrefactor;
+		}
+		U_p  += phi*A + phi*phi*phi*B + 6.0*phi*phi*phi*phi*phi*lambda_6;
+		hintIter=result_U_p.insert(hintIter, std::make_pair( phi, U_p) ); 
+		phi+=step;
+	}
+	return true;
+
+}
+
+
+
 
 

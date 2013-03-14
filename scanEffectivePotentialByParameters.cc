@@ -35,6 +35,7 @@ int main(int narg,char **arg)
 	std::map< std::string, bool > parametersIsSet;
 	
 	prepareParameterMaps(parametersDouble, parametersInt, parametersString, parametersIsSet);
+	size_t numberOfParameters=parametersDouble.size()+parametersInt.size()+parametersString.size();
 	if(narg!=2)
 	{
 		cerr <<"Error, start program with:" <<endl;
@@ -42,12 +43,13 @@ int main(int narg,char **arg)
 		streamParameterMaps(parametersDouble, parametersInt, parametersString, cerr);
 		exit(EXIT_FAILURE);
 	}
+	
 	if( !loadParameterMapsFromFile(parametersDouble, parametersInt, parametersString, parametersIsSet, arg[1]) )
 	{
 		cerr <<"Error loading input file" <<endl <<arg[1] <<endl;
 		exit(EXIT_FAILURE);
 	}
-	size_t numberOfParameters=parametersDouble.size()+parametersInt.size()+parametersString.size();
+	
 	
 	cout <<"Parameters loaded:" <<endl;
 	streamSetParameterMaps(parametersDouble, parametersInt, parametersString, parametersIsSet, cout);
@@ -55,7 +57,7 @@ int main(int narg,char **arg)
 	cout <<"Check input parameters" <<endl;
 	if( !checkConsistencyOfParameters(parametersDouble, parametersInt, parametersString, parametersIsSet) )
 	{
-		cerr <<"Error, given input parameters are inconsitsnet" <<endl;
+		cerr <<"Error, given input parameters are inconsistent" <<endl;
 		exit(EXIT_FAILURE);
 	}
 	else{ cout <<"passed" <<endl; }
@@ -155,7 +157,7 @@ int main(int narg,char **arg)
 								cout <<"Massdetermination did not converged after " <<i <<" iterations. Last difference: " <<diff <<endl;
 								if(diff==convergence_freeze_dummy)
 								{
-									cout <<"convergence freezed" <<endl;
+									cout <<"convergence frozen" <<endl;
 									resultFlag=1;
 									break;
 								}
@@ -182,6 +184,59 @@ int main(int narg,char **arg)
 							dummy.m0Squared     = effPot.get_m0Squared();
 							dummy.mHSquared     = effPot.get_mHSquared();
 							dummy.mH_in_GeV     = effPot.get_mH_in_GeV();
+						}
+						if( /*resultFlag!=2 && */ parametersInt["scan_first_derivative"] )
+						{
+							std::map< double, double > derivativeOfPotential;
+							int derivative_sucess(-1);
+							switch(parametersInt["iteration_scheme"])
+							{
+								case 0 : derivative_sucess=effPot.scanPotential_firstDerivative_withMassInPropSumByHand(parametersDouble["scan_derivative_min"], parametersDouble["scan_derivative_max"], parametersDouble["scan_derivative_step"], derivativeOfPotential); break;
+								case 1 : derivative_sucess=-1; break;
+								default: derivative_sucess=-1; 
+							}
+							if(derivative_sucess!=1)
+							{
+								cout <<"vev is not the only extremum" <<endl;
+								dummy.resultFlag=3;
+							}
+							//output of derivative
+							if(parametersInt["print_derivative_scan"]!=0)
+							{
+								std::ostringstream outputFileName;
+								outputFileName<<parametersString["derivativeFileBody"];
+								if(parametersInt["scan_cutoff_in_GeV"]!=0)
+								{
+									outputFileName<<"_"<<*cutoff_in_GeV;
+								}
+								outputFileName<<".txt";
+								std::ofstream outputFile( outputFileName.str().c_str() );
+								if(!outputFile.good())
+								{
+									cerr <<"Error opening output file" <<endl <<outputFileName.str() <<endl;
+									exit(EXIT_FAILURE);
+								}
+								outputFile <<"# first derivative of the constrained effective Potential" <<endl;
+								outputFile <<"# actual values used:" <<endl;
+								outputFile <<"# L0: " <<parametersInt["L0"];
+								outputFile <<"  L1: " <<parametersInt["L1"];
+								outputFile <<"  L2: " <<parametersInt["L2"];
+								outputFile <<"  L3: " <<parametersInt["L3"] <<endl;;
+								outputFile <<"# Cutoff in GeV: " <<*cutoff_in_GeV <<endl;
+								outputFile <<"# y_t: " << *y_t <<endl;
+								outputFile <<"# y_b: " << y_b <<endl;
+								outputFile <<"# lambda_6: " << *lambda_6 <<endl;
+								outputFile <<"# lambda: " << *lambda <<endl;
+								outputFile <<"# m0Squared: " << effPot.get_m0Squared() <<endl;
+								outputFile <<"# mHSquared: " << effPot.get_mHSquared() <<endl;
+								outputFile <<"# format is: vev   U_prime" <<endl;
+								outputFile.precision(12);
+								for(std::map< double, double >::const_iterator iter=derivativeOfPotential.begin(); iter!=derivativeOfPotential.end(); ++iter)
+								{
+									outputFile <<iter->first <<" " <<iter->second <<endl;
+								}
+								outputFile.close();
+							}
 						}
 						
 						results.push_back(dummy);
@@ -212,11 +267,12 @@ int main(int narg,char **arg)
 		streamSetParameterMaps( parametersDouble, parametersInt, parametersString, parametersIsSet, outputFile, "#");
 		outputFile <<"# Output format is:" <<endl;
 		outputFile <<"# cutoff_in_GeV   vev   y_t   y_b   lambda   lambda_6   m0Squared   mHSquared   mH_in_GeV   resultFlag" <<endl;
-		outputFile <<"# resultFlag:  0=no error   1=determination did not converge   2=Error during iteration" <<endl;
+		outputFile <<"# resultFlag:  0=no error   1=determination did not converge   2=Error during iteration 3=scan of potential showed second extremum" <<endl;
 		if(! printResultsVectorToStream( results, outputFile ) )
 		{
 			cerr <<"Error, during output to" <<endl <<parametersString["OutputFile"] <<endl;
 		}
+		outputFile.close();
 	}
 	
 	
