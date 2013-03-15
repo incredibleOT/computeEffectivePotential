@@ -185,20 +185,22 @@ int main(int narg,char **arg)
 							dummy.mHSquared     = effPot.get_mHSquared();
 							dummy.mH_in_GeV     = effPot.get_mH_in_GeV();
 						}
-						if( /*resultFlag!=2 && */ parametersInt["scan_first_derivative"] )
+						if( resultFlag!=2 &&  parametersInt["scan_first_derivative"] )
 						{
 							std::map< double, double > derivativeOfPotential;
-							int derivative_sucess(-1);
+							bool derivative_sucess(false);
+							int nExtreme=0;
 							switch(parametersInt["iteration_scheme"])
 							{
-								case 0 : derivative_sucess=effPot.scanPotential_firstDerivative_withMassInPropSumByHand(parametersDouble["scan_derivative_min"], parametersDouble["scan_derivative_max"], parametersDouble["scan_derivative_step"], derivativeOfPotential); break;
-								case 1 : derivative_sucess=-1; break;
-								default: derivative_sucess=-1; 
+								case 0 : derivative_sucess=effPot.scanPotential_firstDerivative_withMassInPropSumByHand(parametersDouble["scan_derivative_min"], parametersDouble["scan_derivative_max"], parametersDouble["scan_derivative_step"], derivativeOfPotential); nExtreme=countNumberOfSignChanges( derivativeOfPotential ); break;
+								case 1 : derivative_sucess=false; break;
+								default: derivative_sucess=false; 
 							}
-							if(derivative_sucess!=1)
+							
+							if(derivative_sucess)
 							{
-								cout <<"vev is not the only extremum" <<endl;
-								dummy.resultFlag=3;
+								cout <<"First derivative shows " <<nExtreme <<" extrema"  <<endl;
+								if(nExtreme!=1){ dummy.resultFlag=3; } 
 							}
 							//output of derivative
 							if(parametersInt["print_derivative_scan"]!=0)
@@ -207,7 +209,23 @@ int main(int narg,char **arg)
 								outputFileName<<parametersString["derivativeFileBody"];
 								if(parametersInt["scan_cutoff_in_GeV"]!=0)
 								{
-									outputFileName<<"_"<<*cutoff_in_GeV;
+									outputFileName<<"_cutoff_"<<*cutoff_in_GeV;
+								}
+								if(parametersInt["scan_y_t"]!=0)
+								{
+									outputFileName<<"_yt_"<<*y_t;
+								}
+								if(parametersInt["scan_yRatio"]!=0)
+								{
+									outputFileName<<"_yRatio_"<<*yRatio;
+								}
+								if(parametersInt["scan_lambda_6"]!=0)
+								{
+									outputFileName<<"_lambda6_"<<*lambda_6;
+								}
+								if(parametersInt["determine_lambda"]==0 && parametersInt["scan_lambda"]!=0)
+								{
+									outputFileName<<"_lambda_"<<*lambda;
 								}
 								outputFileName<<".txt";
 								std::ofstream outputFile( outputFileName.str().c_str() );
@@ -267,7 +285,8 @@ int main(int narg,char **arg)
 		streamSetParameterMaps( parametersDouble, parametersInt, parametersString, parametersIsSet, outputFile, "#");
 		outputFile <<"# Output format is:" <<endl;
 		outputFile <<"# cutoff_in_GeV   vev   y_t   y_b   lambda   lambda_6   m0Squared   mHSquared   mH_in_GeV   resultFlag" <<endl;
-		outputFile <<"# resultFlag:  0=no error   1=determination did not converge   2=Error during iteration 3=scan of potential showed second extremum" <<endl;
+		outputFile <<"# resultFlag:  0=no error   1=determination did not converge   2=Error during iteration" <<endl;
+		outputFile <<"#              3=scan of potential showed not only one extremum" <<endl;
 		if(! printResultsVectorToStream( results, outputFile ) )
 		{
 			cerr <<"Error, during output to" <<endl <<parametersString["OutputFile"] <<endl;

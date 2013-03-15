@@ -15,6 +15,13 @@ scanEffectivePotentialByParameters: scanEffectivePotentialByParameters.o ${OFILE
 scanEffectivePotentialByParameters.o: scanEffectivePotentialByParameters.cc ${OFILES}
 	${CXX} ${CXXFLAGS} -c -o $@ $<
 
+determineBoundAndPlotPotential: determineBoundAndPlotPotential.o effectivePotential.o
+	${CXX} ${CXXFLAGS} -o $@ $^ ${LIBS}
+
+determineBoundAndPlotPotential.o: determineBoundAndPlotPotential.cc effectivePotential.o
+	${CXX} ${CXXFLAGS} -c -o $@ $<
+
+
 
 ### ofiles
 effectivePotential.o: effectivePotential.cc effectivePotential.h

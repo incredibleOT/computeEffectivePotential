@@ -134,7 +134,7 @@ class effectivePotential
 	double iterateMassDetermination_withMassInPropSumByHand(); //returns the sum of the absolut changes of m0Squared and mHSquared 
 	
 	//uses the last values of the masses and writes the potential and its first two derivatives to the stream
-	bool plotPotentialToStream(double min, double max, double step, std::ostream &output, bool withInfo);
+	bool plotPotentialToStream_withMassInPropSumByHand(double min, double max, double step, std::ostream &output, bool withInfo);
 	private:
 	bool fillVectorWithEigenvaluesAndPrefac( std::vector< std::pair< std::complex< double >, std::complex< double > > > &toBeFilled);
 	public:

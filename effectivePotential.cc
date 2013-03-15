@@ -581,7 +581,7 @@ bool effectivePotential::fillVectorWithEigenvaluesAndPrefac( std::vector< std::p
 
 
 
-bool effectivePotential::plotPotentialToStream(double min, double max, double step, std::ostream &output, bool withInfo)
+bool effectivePotential::plotPotentialToStream_withMassInPropSumByHand(double min, double max, double step, std::ostream &output, bool withInfo)
 {
 	//U=U_f + phi^2*[m0^2/2 + 6*lambda*(P_H+P_G) + lambda_6*(45*P_H^2+54*P_H*P_G+45*P_G^2)] + phi^4[lambda + lambda_6*(15*P_h+9*P_G)] + phi^6*lambda_6
 	//U=U_f + phi^2*A + phi^4*B + phi^6*lambda_6
