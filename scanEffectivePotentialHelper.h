@@ -40,7 +40,7 @@ struct resultForOutput
 	double mHSquared;
 	double mH_in_GeV;
 	int resultFlag; //0:no error; 1:no convergence(frosen or maxcount reached), 2:error during iteration, 3:not only 1 extremum; 
-	resultForOutput(): cutoff_in_GeV(0.0), vev(0.0), y_t(0.0), y_b(0.0), lambda(0.0), lambda_6(0.0), m0Squared(0.0), mHSquared(0.0), mH_in_GeV(0.0), resultFlag(0){};
+	resultForOutput(): cutoff_in_GeV(0.0), vev(0.0), y_t(0.0), y_b(0.0), lambda(0.0), lambda_6(0.0), m0Squared(0.0), mHSquared(0.0), mH_in_GeV(0.0), resultFlag(-1){};
 	resultForOutput(const resultForOutput &o): cutoff_in_GeV(o.cutoff_in_GeV), vev(o.vev), y_t(o.y_t), y_b(o.y_b), lambda(o.lambda), lambda_6(o.lambda_6), 
 	                 m0Squared(o.m0Squared), mHSquared(o.mHSquared), mH_in_GeV(o.mH_in_GeV), resultFlag(o.resultFlag){};
 };

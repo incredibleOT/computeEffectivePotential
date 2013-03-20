@@ -6,7 +6,11 @@
 //ratio y_t/y_b
 //lambda_6
 //lambda_0
-//for lambda_0 there is also the possibility to set it by a stability criterion (choice of multiple criterions may be possible at some point)
+//for lambda_0 there is are various possibilities to be set:
+// - by hand
+// - a stability criterion (\lambda > -\lambda_6*(30/48 + 24*P_G)
+// - lower it, until there is a second extremum next to the minimum for the vev
+
 // --------
 
 
@@ -115,16 +119,64 @@ int main(int narg,char **arg)
 					effPot.set_lambda_6(*lambda_6);
 					
 					//set lambda
-					bool useStabilityCriterion_1(false); // lambda=-lambda_6*(30/48 + 24* P_G)
 					std::set< double >lambda_values;
-					if( parametersInt["determine_lambda"]==0 && ( !parametersIsSet["scan_lambda"] || parametersInt["scan_lambda"]==0 ) ){ lambda_values.insert( parametersDouble["lambda"] ); }
-					else if( parametersInt["determine_lambda"]==1 ){ useStabilityCriterion_1=true; lambda_values.insert( 0.0 ); }
-					else{ fillSetWithRange( parametersDouble["lambda_min"], parametersDouble["lambda_max"], parametersDouble["lambda_step"], lambda_values ); }
+					if( parametersInt["determine_lambda"]==0 && ( !parametersIsSet["scan_lambda"] || parametersInt["scan_lambda"]==0 ) )
+					{ 
+						lambda_values.insert( parametersDouble["lambda"] );
+					}
+					else if( parametersInt["determine_lambda"]==0 && parametersInt["scan_lambda"]!=0 )
+					{ 
+						fillSetWithRange( parametersDouble["lambda_min"], parametersDouble["lambda_max"], parametersDouble["lambda_step"], lambda_values );
+					}
+					else if( parametersInt["determine_lambda"]==1 )
+					{
+						lambda_values.insert( 0.0 );
+					}
+					else if( parametersInt["determine_lambda"]==2 )
+					{ 
+						//approach here: use a list of two elemments
+						//in the beginning include lambda_max-|lambda_step| and lambda_max (due to ordering)
+						//use lambda.begin()++
+						//if result behaves as expected (i.e. without a second extremum and positive higgs mass):
+						//refill the list with lambda_max-2*|lambda_step| and lambda_max-|lambda_step|
+						lambda_values.insert(parametersDouble["lambda_max"]);
+						lambda_values.insert(parametersDouble["lambda_max"]-std::abs(parametersDouble["lambda_step"]));
+					}
+					else
+					{
+						cerr <<"Error, unexpected case for setting lambda!" <<endl;
+						exit(EXIT_FAILURE);
+					}
+					
 					//iterate lambda
+					resultForOutput dummy, old_dummy;
+					std::map< double, double > old_derivativeOfPotential;
 					for(std::set< double >::const_iterator lambda=lambda_values.begin(); lambda!=lambda_values.end(); ++lambda)
 					{
-						if(useStabilityCriterion_1){ effPot.set_lambdaToStabilityBound(); cout <<"evaluating lambda = " <<effPot.get_lambda() <<" (from stability bound 1)" <<endl;}
-						else{ effPot.set_lambda(*lambda); cout <<"evaluating lambda = " <<effPot.get_lambda() <<endl; }
+						if(parametersInt["determine_lambda"]==1)
+						{
+							effPot.set_lambdaToStabilityBound(); 
+							cout <<"evaluating lambda = " <<effPot.get_lambda() <<" (from stability bound 1)" <<endl;
+						}
+						else if( parametersInt["determine_lambda"]==2 )
+						{
+							//set lambda to *(++lambda_values.begin())
+							// what follows has to be done where there is holymagicshit
+							//if there is no second extremum, store dummy in old_dummy and derivativeOfPotential
+							//in old_derivativeOfPotential
+							//further remove ++lambda_values.begin() and add lambda_values.begin()-abs(lambda_step)
+							//set lambda to lambda_values.begin() and execute continue 
+							//if there is a second extremum, lambda is too small. Copy old_dummy and
+							//old_derivativeOfPotential and go on
+							//I know, it's somehow bad style...
+							effPot.set_lambda( *(++lambda_values.begin()) );
+							cout <<"evaluating lambda = " <<effPot.get_lambda() <<endl;
+						}
+						else if( parametersInt["determine_lambda"]==2 )
+						{
+							effPot.set_lambda(*lambda); cout <<"evaluating lambda = " <<effPot.get_lambda() <<endl;
+						}
+						
 						
 						int resultFlag(0);
 						//now start the action
@@ -165,7 +217,7 @@ int main(int narg,char **arg)
 								resultFlag=1;
 							}
 						}
-						resultForOutput dummy;
+						
 						dummy.cutoff_in_GeV = effPot.get_cutoff_in_GeV();
 						dummy.vev           = effPot.get_vev();
 						dummy.y_t           = effPot.get_y_t();
@@ -201,6 +253,32 @@ int main(int narg,char **arg)
 							{
 								cout <<"First derivative shows " <<nExtreme <<" extrema"  <<endl;
 								if(nExtreme!=1){ dummy.resultFlag=3; } 
+								//NOTE holymagicshit
+								//if there is no second extremum, store dummy in old_dummy and derivativeOfPotential
+								//in old_derivativeOfPotential
+								//further remove ++lambda_values.begin() and add lambda_values.begin()-abs(lambda_step)
+								//set lambda to lambda_values.begin() and execute continue 
+								//if there is a second extremum, lambda is too small. Copy old_dummy and
+								//old_derivativeOfPotential and go on
+								//I know, it's somehow bad style...
+								if( parametersInt["determine_lambda"]==2 && dummy.mHSquared > 0.0 && nExtreme==1 )
+								{
+									old_dummy=dummy;
+									old_derivativeOfPotential=derivativeOfPotential;
+									lambda_values.erase( ++lambda_values.begin() );
+									lambda_values.insert( *lambda_values.begin() - std::abs(parametersDouble["lambda_step"]) );
+									cout <<"actual m0Sqared = " <<effPot.get_m0Squared() <<"     mHSquared = " <<effPot.get_mHSquared() <<"     mH = " <<effPot.get_mH_in_GeV() 
+									<<"   valid. Decrease lambda." <<endl;
+									lambda=lambda_values.begin();
+									continue;
+								}
+								else if( parametersInt["determine_lambda"]==2 )
+								{
+									cout <<"Negative mass or multiple extrema, take last result!" <<endl;
+									dummy=old_dummy;
+									derivativeOfPotential=old_derivativeOfPotential;
+									lambda=--(lambda_values.end());
+								}
 							}
 							//output of derivative
 							if(parametersInt["print_derivative_scan"]!=0)
@@ -209,23 +287,23 @@ int main(int narg,char **arg)
 								outputFileName<<parametersString["derivativeFileBody"];
 								if(parametersInt["scan_cutoff_in_GeV"]!=0)
 								{
-									outputFileName<<"_cutoff_"<<*cutoff_in_GeV;
+									outputFileName<<"_cutoff_"<<dummy.cutoff_in_GeV;
 								}
 								if(parametersInt["scan_y_t"]!=0)
 								{
-									outputFileName<<"_yt_"<<*y_t;
+									outputFileName<<"_yt_"<<dummy.y_t;
 								}
 								if(parametersInt["scan_yRatio"]!=0)
 								{
-									outputFileName<<"_yRatio_"<<*yRatio;
+									outputFileName<<"_yRatio_"<<dummy.y_t/dummy.y_b;
 								}
 								if(parametersInt["scan_lambda_6"]!=0)
 								{
-									outputFileName<<"_lambda6_"<<*lambda_6;
+									outputFileName<<"_lambda6_"<<dummy.lambda_6;
 								}
 								if(parametersInt["determine_lambda"]==0 && parametersInt["scan_lambda"]!=0)
 								{
-									outputFileName<<"_lambda_"<<*lambda;
+									outputFileName<<"_lambda_"<<dummy.lambda;
 								}
 								outputFileName<<".txt";
 								std::ofstream outputFile( outputFileName.str().c_str() );
@@ -240,13 +318,13 @@ int main(int narg,char **arg)
 								outputFile <<"  L1: " <<parametersInt["L1"];
 								outputFile <<"  L2: " <<parametersInt["L2"];
 								outputFile <<"  L3: " <<parametersInt["L3"] <<endl;;
-								outputFile <<"# Cutoff in GeV: " <<*cutoff_in_GeV <<endl;
-								outputFile <<"# y_t: " << *y_t <<endl;
-								outputFile <<"# y_b: " << y_b <<endl;
-								outputFile <<"# lambda_6: " << *lambda_6 <<endl;
-								outputFile <<"# lambda: " << *lambda <<endl;
-								outputFile <<"# m0Squared: " << effPot.get_m0Squared() <<endl;
-								outputFile <<"# mHSquared: " << effPot.get_mHSquared() <<endl;
+								outputFile <<"# Cutoff in GeV: " <<dummy.cutoff_in_GeV <<endl;
+								outputFile <<"# y_t: " << dummy.y_t <<endl;
+								outputFile <<"# y_b: " << dummy.y_b <<endl;
+								outputFile <<"# lambda_6: " << dummy.lambda_6 <<endl;
+								outputFile <<"# lambda: " << dummy.lambda <<endl;
+								outputFile <<"# m0Squared: " << dummy.m0Squared <<endl;
+								outputFile <<"# mHSquared: " << dummy.mHSquared <<endl;
 								outputFile <<"# format is: vev   U_prime" <<endl;
 								outputFile.precision(12);
 								for(std::map< double, double >::const_iterator iter=derivativeOfPotential.begin(); iter!=derivativeOfPotential.end(); ++iter)
@@ -258,7 +336,8 @@ int main(int narg,char **arg)
 						}
 						
 						results.push_back(dummy);
-						cout <<"Result: m0Sqared = " <<effPot.get_m0Squared() <<"     mHSquared = " <<effPot.get_mHSquared() <<"     mH = " <<effPot.get_mH_in_GeV() <<endl;
+						cout <<"Result: m0Sqared = " <<dummy.m0Squared <<"     mHSquared = " <<dummy.mHSquared 
+						     <<"     mH = " <<sqrt(dummy.mHSquared)*dummy.cutoff_in_GeV <<endl;
 					}
 				}
 			}

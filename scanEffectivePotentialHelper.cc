@@ -42,6 +42,8 @@ void prepareParameterMaps( std::map< std::string, double > &paraD, std::map< std
 	
 	//determine_lambda==0 use scan and then like the others
 	// ==1 stability bound (lambda>-lambda_6*(30/48 + 24*P_G))
+	//==2 Lower lambda until there is a second minimum (consider the lowest lambda as the result with only one minimum in the potential in a given rang)
+	// for the case 2: start at lambda_max and decrease by the abs of lambda_step
 	//others may follow
 	paraI["determine_lambda"]=-1;
 	paraI["scan_lambda"]=0;
@@ -387,7 +389,25 @@ bool checkConsistencyOfParameters( std::map< std::string, double > &paraD, std::
 			}
 		}
 	}
-	if( paraI["determine_lambda"] < 0 || paraI["determine_lambda"] > 1 )
+	else if( paraI["determine_lambda"] == 1 )
+	{
+		//do nothing
+	}
+	else if( paraI["determine_lambda"] == 2 )
+	{
+		//check if lambda_max and lambda_step are set
+		if( !paraIsSet["lambda_max"] || !paraIsSet["lambda_step"] || paraD["lambda_step"]==0.0 )
+		{
+			std::cerr <<"Set lambda_max and lambda_step for determine_lambda=2!" <<std::endl;
+			return false;
+		}
+		if( !(paraIsSet["scan_first_derivative"] && paraI["scan_first_derivative"]!=0 ) )
+		{
+			std::cerr <<"Set scan_first_derivative for determine_lambda=2!" <<std::endl;
+			return false;
+		}
+	}
+	else
 	{
 		std::cerr <<"determine_lambda =" << paraI["determine_lambda"] <<" is not implemented" <<std::endl;
 		return false;
