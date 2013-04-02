@@ -46,7 +46,7 @@ lambda_6           0.10
 determine_lambda   0
 scan_lambda       1
 #lambda           0
-lambda_min        -1.0
+lambda_min        -0.5
 lambda_max        0.0
 lambda_step       0.05
 
@@ -57,23 +57,23 @@ lambda_step       0.05
 iteration_scheme   0
 
 ## output file
-OutputFile         output/scansInLambda/scan_mt500_cutoff_2000_l6_0.10_lscan_L24T48.txt
+OutputFile         output/forJohn/scan_mt500_cutoff_2000_l6_0.10_lscan_L24T48.txt
 
 
 ## whether after determining the mass, the first derivative of the CEP schould be scanned
 ## will test, whether a second extremum occurs and set the
-scan_first_derivative    1
-scan_derivative_min      0.01
-scan_derivative_max      0.6
-scan_derivative_step     0.01
+#scan_first_derivative    1
+#scan_derivative_min      0.01
+#scan_derivative_max      0.6
+#scan_derivative_step     0.01
 	
 ## whether the derivative scan should be printed to a file
-print_derivative_scan    1
+#print_derivative_scan    1
 	
 ## name will be: derivativeFileBody_ZZZZZ.txt
 ## ZZZZZ will contain all quantities that were scanned
 ## e.g.: _cut_x.x_; 
-derivativeFileBody       output/scansInLambda/scan_mt500_cutoff_2000_l6_0.10_L24T48
+#derivativeFileBody       output/scansInLambda/scan_mt500_cutoff_2000_l6_0.05_L24T48
 
 
 

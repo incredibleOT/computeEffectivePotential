@@ -120,7 +120,7 @@ int main(int narg,char **arg)
 					
 					//set lambda
 					std::set< double >lambda_values;
-					if( parametersInt["determine_lambda"]==0 && ( !parametersIsSet["scan_lambda"] || parametersInt["scan_lambda"]==0 ) )
+					if( parametersInt["determine_lambda"]==0 && ( parametersInt["scan_lambda"]==0 ) )
 					{ 
 						lambda_values.insert( parametersDouble["lambda"] );
 					}
@@ -153,7 +153,12 @@ int main(int narg,char **arg)
 					std::map< double, double > old_derivativeOfPotential;
 					for(std::set< double >::const_iterator lambda=lambda_values.begin(); lambda!=lambda_values.end(); ++lambda)
 					{
-						if(parametersInt["determine_lambda"]==1)
+						if(parametersInt["determine_lambda"]==0)
+						{
+							effPot.set_lambda(*lambda);
+							cout <<"evaluating lambda = " <<effPot.get_lambda() <<endl;
+						}
+						else if(parametersInt["determine_lambda"]==1)
 						{
 							effPot.set_lambdaToStabilityBound(); 
 							cout <<"evaluating lambda = " <<effPot.get_lambda() <<" (from stability bound 1)" <<endl;
