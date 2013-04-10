@@ -43,7 +43,10 @@ void prepareParameterMaps( std::map< std::string, double > &paraD, std::map< std
 	//determine_lambda==0 use scan and then like the others
 	// ==1 stability bound (lambda>-lambda_6*(30/48 + 24*P_G))
 	//==2 Lower lambda until there is a second minimum (consider the lowest lambda as the result with only one minimum in the potential in a given rang)
-	// for the case 2: start at lambda_max and decrease by the abs of lambda_step
+	//==3 Lower lambda until the second der. of U gets negative for values larger that v
+	// for the case 2 and 3 : start at lambda_max and decrease by the abs of lambda_step_max as the maximal step size, 
+	// lambda_step is the smalles stepsize tried
+	// 
 	//others may follow
 	paraI["determine_lambda"]=-1;
 	paraI["scan_lambda"]=0;
@@ -51,6 +54,7 @@ void prepareParameterMaps( std::map< std::string, double > &paraD, std::map< std
 	paraD["lambda_min"]=-1.0;
 	paraD["lambda_max"]=-1.0;
 	paraD["lambda_step"]=-1.0;
+	paraD["lambda_step_max"]=-1.0;
 	
 	//determin the iteration scheme
 	//==0 use the one where the masses in the propagator sums are replaced by zero for goldstones and m_h for Higgs. Does not include bosonic determinant
@@ -62,13 +66,14 @@ void prepareParameterMaps( std::map< std::string, double > &paraD, std::map< std
 	//whether after determining the mass, the first derivative of the CEP schould be scanned
 	//will test, whether a second extremum occurs and set the 
 	paraI["scan_first_derivative"]=0;
+	paraI["scan_second_derivative"]=0;
 	paraD["scan_derivative_min"]=-1.0;
 	paraD["scan_derivative_max"]=-1.0;
 	paraD["scan_derivative_step"]=-1.0;
 	
 	//whether the derivative should be printed to a file
 	paraI["print_derivative_scan"]=0;
-	//name will be: derivativeFileBody_ZZZZZ.txt
+	//name will be: derivativeFileBody_ZZZZZ_[1st|2nd]Derivvative.txt
 	//ZZZZZ will contain all quantities that were scanned
 	//e.g.: _cut_x.x_; 
 	paraS["derivativeFileBody"]="";
@@ -393,17 +398,27 @@ bool checkConsistencyOfParameters( std::map< std::string, double > &paraD, std::
 	{
 		//do nothing
 	}
-	else if( paraI["determine_lambda"] == 2 )
+	else if( paraI["determine_lambda"] == 2 || paraI["determine_lambda"] == 3 )
 	{
-		//check if lambda_max and lambda_step are set
-		if( !paraIsSet["lambda_max"] || !paraIsSet["lambda_step"] || paraD["lambda_step"]==0.0 )
+		//check if lambda_max, lambda_step and lambda_step_max are set
+		if( !paraIsSet["lambda_max"] || !paraIsSet["lambda_step"] || !paraIsSet["lambda_step_max"] )
 		{
-			std::cerr <<"Set lambda_max and lambda_step for determine_lambda=2!" <<std::endl;
+			std::cerr <<"Set lambda_max, lambda_step and lambda_step_max for determine_lambda=2 or 3!" <<std::endl;
 			return false;
 		}
-		if( !(paraIsSet["scan_first_derivative"] && paraI["scan_first_derivative"]!=0 ) )
+		if( paraD["lambda_step_max"] < paraD["lambda_step"] || paraD["lambda_step"] <=0.0)
+		{
+			std::cerr <<"Error, choose lambda_step_max >= lambda_step>0.0!" <<std::endl;
+			return false;
+		}
+		if( paraI["determine_lambda"] == 2 && !(paraIsSet["scan_first_derivative"] && paraI["scan_first_derivative"]!=0 ) )
 		{
 			std::cerr <<"Set scan_first_derivative for determine_lambda=2!" <<std::endl;
+			return false;
+		}
+		if( paraI["determine_lambda"] == 3 && !(paraIsSet["scan_second_derivative"] && paraI["scan_second_derivative"]!=0 ) )
+		{
+			std::cerr <<"Set scan_second_derivative for determine_lambda=3!" <<std::endl;
 			return false;
 		}
 	}
@@ -448,7 +463,7 @@ bool checkConsistencyOfParameters( std::map< std::string, double > &paraD, std::
 		return false;
 	}
 	//scan_first_derivative
-	if( paraIsSet["scan_first_derivative"] && paraI["scan_first_derivative"]!=0 )
+	if( paraI["scan_first_derivative"]!=0 || paraI["scan_second_derivative"]!=0 )
 	{
 		if( !( paraIsSet["scan_derivative_min"] && paraIsSet["scan_derivative_max"] && paraIsSet["scan_derivative_step"] ) )
 		{
@@ -479,7 +494,7 @@ bool checkConsistencyOfParameters( std::map< std::string, double > &paraD, std::
 			std::cerr <<"No derivativeFileBody given to print derivative scan" <<std::endl;
 			return false;
 		}
-		if(!paraIsSet["scan_first_derivative"] || paraI["scan_first_derivative"]==0)
+		if( paraI["scan_first_derivative"]==0 && paraI["scan_second_derivative"]==0)
 		{
 			std::cerr <<"Output of derivative scan set, but no scan was set" <<std::endl;
 			return false;
@@ -560,3 +575,14 @@ int countNumberOfSignChanges(const std::map< double, double > &firstDerivative)
 	return result;
 }
 
+
+
+bool checkForNegativeCurvature(const std::map< double, double > &secondDerivative, double min)
+{
+	// returns true, if the is a negative value for a key larger then min 
+	for(std::map< double, double >::const_iterator iter=secondDerivative.lower_bound(min); iter!=secondDerivative.end(); ++iter)
+	{
+		if(iter->second < 0.0 ){return true;}
+	}
+	return false;
+}

@@ -142,6 +142,8 @@ class effectivePotential
 	//scans only the first derivative of the potential in the given range (cheaper, since no log ;) )
 	//uses the last values of mHSquared and m0Squared
 	bool scanPotential_firstDerivative_withMassInPropSumByHand(double min, double max, double step, std::map< double, double > &result_U_p);
+	
+	bool scanPotential_secondDerivative_withMassInPropSumByHand(double min, double max, double step, std::map< double, double > &result_U_pp);
 
 };
 

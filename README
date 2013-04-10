@@ -1,0 +1,41 @@
+The program "scanEffectivePotentialByParameters" tries to find the Higgs mass for a given set of input parameters and 
+is able to scan in those parameters.
+ 
+ Input parameters are:
+ 
+ - L0, L1, L2, L3 (Lattice extend (so far only periodic BC) )
+ - N_f, r rho (if different from 1, 0.5, and 1)
+ - cutoff_in_GeV (can be scanned)
+ - y_t top (yukawa coubpling ,can be scanned) )
+ - yRatio  (y_t/y_b, can be scanned)
+ - lambda_6 (from a term in the action: lambda_6 * (phi^dagger phi)^3, can be scanned)
+ - lambda (quartic selfcoupling, can be scanned)
+ 
+For lambda there are several ways of determining tha value used (which on is set by determine_lambda)
+following possibilities:
+0 - use lambda like all other parameters (either one fixed value or a scanning range)
+1 - use a stability bound: (lambda = -lambda_6*(30/48 + 24*P_G)
+2 - test after the determination of the higgsmass, whether the resulting potential has no further extremum in a given region
+    which is specified by the scan_derivative parameters.) Lambda is decreased until this happens and the last lambda 
+    value without a second extremum is used.
+3 - test after mass determination if the potential has negative curvature for phi-values between the vev and an upper 
+    bound determined by the scan_derivative parameters) principle as 2
+For 2 and 3, there is the parameter 
+
+
+Further one can scan the first and second derivatives afterwards 
+(independent of whewther or not they are used for the lambda-determination)
+
+The program takes as input an input file (example in input/inputTemplate.txt)
+
+The iteration scheme, that is used to find the higgs boson mass is given by iteration_scheme
+Following possibilities are:
+0 - the masses in the propagatorsums are inserted by hand: the value for the Goldstone boson is set to zero
+    and for the higgs it is given by the curvature of the potential at the vev
+    The general principle here is to determine m_0^2 by requiring that the first derivative at the vev vanishes and determine m_H^2 afterwards. Iterate until there is a stable soloution
+1 - The masses in the propagator sums are given by:
+    Higgs: m_0^2 + 12.0*lambda*vev*vev + 30.0*lambda_6*vev*vev*vev*vev
+    Goldstones: m_0^2 + 4.0*lambda*vev*vev  + 6.0*lambda_6*vev*vev*vev*vev
+    This approach also includes the bosonic determinant, since it now depends on the vev.
+    Here the only requirement is to get a stable solution for m_0^2 to get a extremum at the vev
+    However, this method does not work so well 

@@ -688,7 +688,6 @@ bool effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand(d
 		return false;
 	}
 	//
-	
 	double last_m0Squared=*(m0Squared.rbegin());
 	double last_mHSquared=*(mHSquared.rbegin());
 	double HiggsPropagatorSum=computePropagatorSum(last_mHSquared);
@@ -737,6 +736,73 @@ bool effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand(d
 }
 
 
+bool effectivePotential::scanPotential_secondDerivative_withMassInPropSumByHand(double min, double max, double step, std::map< double, double > &result_U_pp)
+{
+	// computes the second derivative of the potential in a range of v from min to max in steps of ...(guess!)
+	//U_pp = U_fpp[v] + m0Squared + 12*lambda*v^2 + 30*lambda_6*v^4 + 
+	//    + 2*(6*lambda*(P_H + P_G) + lambda_6*(45*P_G^2 + 54*P_G*P_H + 45*P_H^2) ) + 
+	//    + 3*4*v^2*lambda_6*(15*P_H + 9*P_G)
+	//    == U_fpp[v] + A + 3*v^2*B + 30*lambda_6*v^4
+	//
+	//    A=2*(6*lambda*(P_H + P_G) + lambda_6*(45*P_G^2 + 54*P_G*P_H + 45*P_H^2) ) + m0Squared
+	//    B=4*lambda_6*(15*P_H + 9*P_G) + 12*lambda
+	//
+	//U_fpp[v] = -2*N_f/V * (-2*y_t^2 * sum_p[ re( (1-0.5*rho*nu)^2/(nu+y_t*v*(1-0.5*rho*nu))^2 ) ] + (same with y_b) 
+	
+	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no masses available" <<std::endl; return false; }
+	
+	result_U_pp.clear();
+	
+	//consistency
+	if((max-min)/step > maxCount || (max-min) < 0.0 || step <=0.0  )
+	{
+		std::cerr <<"Error, inconstistent range or to many steps. maxCount in effectivePotential::plotPotentialToStream is " <<maxCount <<std::endl;
+		return false;
+	}
+	double last_m0Squared=*(m0Squared.rbegin());
+	double last_mHSquared=*(mHSquared.rbegin());
+	double HiggsPropagatorSum=computePropagatorSum(last_mHSquared);
+	
+	// contains: < nu, (1-1/(2*rho))nu >, nu are the eigenvalues of the overlap operator
+	std::vector< std::pair< std::complex< double >, std::complex< double > > > eigenvaluesAndPrefactor;
+	bool withFermions(y_t!=0.0 || y_b!=0.0);
+	if( withFermions)
+	{
+		if(!fillVectorWithEigenvaluesAndPrefac(eigenvaluesAndPrefactor))
+		{
+			std::cerr <<"Error, generating Eigenvalues" <<std::endl;
+			return false;
+		}
+	}
+	double fermionicPrefactor(-2.0*N_f/(L0*L1*L2*L3));
+	//A=2*(6*lambda*(P_H + P_G) + lambda_6*(45*P_G^2 + 54*P_G*P_H + 45*P_H^2) ) + m0Squared
+	//B=4*lambda_6*(15*P_H + 9*P_G) + 4*lambda
+	double A( last_m0Squared + 12.0*lambda*(HiggsPropagatorSum + propagatorSumWithZeroMass)
+	      + lambda_6*(90.0*HiggsPropagatorSum*HiggsPropagatorSum + 108.0*HiggsPropagatorSum*propagatorSumWithZeroMass + 90.0*propagatorSumWithZeroMass*propagatorSumWithZeroMass) );
+	double B(4.0*lambda + lambda_6*(60.0*HiggsPropagatorSum + 36.0*propagatorSumWithZeroMass) );
+	double phi(min);
+	double U_pp(0.0);
+	std::map< double, double >::iterator hintIter=result_U_pp.begin(); //faster insertion
+	while(phi <= max)
+	{
+		U_pp=0.0;
+		//fermionic contribution
+		if(withFermions)
+		{
+			for(std::vector< std::pair< std::complex< double >, std::complex< double > > >::const_iterator iter=eigenvaluesAndPrefactor.begin(); iter!=eigenvaluesAndPrefactor.end(); ++iter)
+			{
+				//a clearer way can be found in effectivePotential::getFermionicContribution()
+				std::complex< double > z_t(iter->first + y_t*phi*iter->second);
+				std::complex< double > z_b(iter->first + y_b*phi*iter->second);
+				U_pp -= 2.0*y_t*y_t*real( (iter->second * iter->second)/(z_t*z_t) ) + 2.0*y_b*y_b*real( (iter->second * iter->second)/(z_b*z_b) );
+			}
+			U_pp*=fermionicPrefactor;
+		}
+		U_pp  += A + 3.0*phi*phi*B + 30.0*phi*phi*phi*phi*lambda_6;
+		hintIter=result_U_pp.insert(hintIter, std::make_pair( phi, U_pp) ); 
+		phi+=step;
+	}
+	return true;
 
-
-
+}	
+	
