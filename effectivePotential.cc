@@ -1,32 +1,34 @@
 #include "effectivePotential.h"
 
+
+
 //constructors
-effectivePotential::effectivePotential(int l0, int l1, int l2, int l3):
+effectivePotential::effectivePotential(int l0, int l1, int l2, int l3, bool lowMemUsage):
 L0(l0), L1(l1), L2(l2), L3(l3),
 cutoff_in_GeV(-1.0),y_t(-1.0),y_b(-1.0),vev(-1.0),U_f(0.0), U_fp(0.0), U_fpp(0.0),
-propagatorSumWithZeroMass(0.0), lambda(0.0), lambda_6(0.0),
+propagatorSumWithZeroMass(-1.0), lambda(0.0), lambda_6(0.0),
 actual_HPropSum(0.0), actual_HPropSumD1(0.0), actual_HPropSumD2(0.0),
 actual_GPropSum(0.0), actual_GPropSumD1(0.0), actual_GPropSumD2(0.0),
 actual_BosDet(0.0), actual_BosDetD1(0.0), actual_BosDetD2(0.0),
-smallest_pSquared(-1.0)
+smallest_pSquared(-1.0),lowMem(lowMemUsage)
 {
 	setConstants();
-	get_pSquared();
+	if (!lowMem){ get_pSquared(); }
 }
 
-effectivePotential::effectivePotential(int l0, int l1, int l2, int l3, double cutoff, double yt, double yb):
+effectivePotential::effectivePotential(int l0, int l1, int l2, int l3, double cutoff, double yt, double yb, bool lowMemUsage):
 L0(l0), L1(l1), L2(l2), L3(l3),
 cutoff_in_GeV(cutoff),y_t(yt),y_b(yb),vev(-1.0),U_f(0.0), U_fp(0.0), U_fpp(0.0),
-propagatorSumWithZeroMass(0.0), lambda(0.0), lambda_6(0.0),
+propagatorSumWithZeroMass(-1.0), lambda(0.0), lambda_6(0.0),
 actual_HPropSum(0.0), actual_HPropSumD1(0.0), actual_HPropSumD2(0.0),
 actual_GPropSum(0.0), actual_GPropSumD1(0.0), actual_GPropSumD2(0.0),
 actual_BosDet(0.0), actual_BosDetD1(0.0), actual_BosDetD2(0.0),
-smallest_pSquared(-1.0)
+smallest_pSquared(-1.0),lowMem(lowMemUsage)
 {
 	setConstants();
 	vev=vev_in_GeV/cutoff_in_GeV;
-	get_pSquared ();
-	getFermionicContribution();
+	if (!lowMem){ get_pSquared(); }
+	getFermionicContribution(); //for lowmem only the derivatives will be used.... will be handled in the function
 }
 
 //sets the sonsts
@@ -79,7 +81,7 @@ bool effectivePotential::getFermionicContribution()
 					//U_f=\sum{log(z*z^*)} (factor of -2N_f/V comes in the end)
 					//U_fp=\sum{2*y*Re[w/z]}
 					//U_fpp=\sum{-2*y^2*Re[w^2/z^2]}
-					U_f   += real( log( z_t * conj(z_t) ) + log( z_b * conj(z_b) ) );
+// 					U_f   += real( log( z_t * conj(z_t) ) + log( z_b * conj(z_b) ) ); //Never used no need
 					U_fp  += 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
 					U_fpp -= 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
 				}
@@ -87,7 +89,7 @@ bool effectivePotential::getFermionicContribution()
 		}
 	}
 	//multiply with -2*N_f/V
-	U_f   *= (-2.0*N_f/(L0*L1*L2*L3));
+// 	U_f   *= (-2.0*N_f/(L0*L1*L2*L3)); Never used, no need
 	U_fp  *= (-2.0*N_f/(L0*L1*L2*L3));
 	U_fpp *= (-2.0*N_f/(L0*L1*L2*L3));
 	return true;
@@ -98,6 +100,12 @@ bool effectivePotential::getFermionicContribution()
 //fills the vector with all \hat{p}^2 = 4*\sum_mu(sin(p_mu)^2)
 void effectivePotential::get_pSquared()
 {
+	//should not be started in the lowMem case...
+	if(lowMem)
+	{
+		std::cerr <<"Error, effectivePotential::get_pSquared(), not expected to be started with lowMem flag set!" <<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	double p0,p1,p2,p3;
 	double one_ov_L0(1.0/L0);
 	double one_ov_L1(1.0/L1);
@@ -169,6 +177,11 @@ void effectivePotential::computeBosonicDeterminantAndPropagatorSums_WithDerivati
 	//det:     det = log ( \hat{p}^2+m_0^2+z)
 	//         det'= z'/( \hat{p}^2+m_0^2+z)
 	//         det"= [z"*( \hat{p}^2+m_0^2+z) - z'^2]/( \hat{p}^2+m_0^2+z)^2  
+	if(lowMem)
+	{
+		std::cerr <<"Error, effectivePotential::computeBosonicDeterminantAndPropagatorSums_WithDerivatives_combined(bool updateDeterminant), not expected to be started with lowMem flag set!" <<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if(m0Squared.empty()){ std::cerr <<"Error, no value for moSquared in effectivePotential::computeBosonicDeterminantAndPropagatorSums()" <<std::endl; exit(EXIT_FAILURE); }
 	
 	double one_ov_V=1.0/(L0*L1*L2*L3);
@@ -324,12 +337,43 @@ void effectivePotential::computeBosonicDeterminantAndPropagatorSums_WithDerivati
 double effectivePotential::computePropagatorSum(double massSquared)
 {
 // 	if( pSquared.empty() ){ get_pSquared (); } //NOTE should never occur, since it's generated in the constructor
-	if( massSquared==0.0 ){ return propagatorSumWithZeroMass; }
+	if( massSquared==0.0 && propagatorSumWithZeroMass > 0.0){ return propagatorSumWithZeroMass; }
 	double sum(0.0);
-	for(std::vector< double >::const_iterator iter=++(pSquared.begin()); iter!=pSquared.end(); ++iter)
+	if (!lowMem)
 	{
-		sum+=1.0/(*iter + massSquared);
+		for(std::vector< double >::const_iterator iter=++(pSquared.begin()); iter!=pSquared.end(); ++iter)
+		{
+			sum+=1.0/(*iter + massSquared);
+		}
 	}
+	else
+	{
+		double p0,p1,p2,p3;
+		double one_ov_L0(1.0/L0);
+		double one_ov_L1(1.0/L1);
+		double one_ov_L2(1.0/L2);
+		double one_ov_L3(1.0/L3);
+		const double PI(atan(1) * 4.0);
+		for(int l0=0; l0<L0; ++l0)
+		{
+			p0 = sin( PI * l0 * one_ov_L0 ); //sin (p_mu /2), p_mu=2*pi*n/L
+			for(int l1=0; l1<L1; ++l1)
+			{
+				p1 = sin( PI * l1 * one_ov_L1 );
+				for(int l2=0; l2<L2; ++l2)
+				{
+					p2 = sin( PI * l2 * one_ov_L2 );
+					for(int l3=(l0==0 && l1==0 && l2==0 ? 1 : 0); l3<L3; ++l3) //exclude zeromode
+					{
+						p3 = sin( PI * l3 * one_ov_L3 );
+						sum+=1.0/(4.0 * (p0*p0 + p1*p1 + p2*p2 + p3*p3 ) + massSquared);
+					}
+				}
+			}
+		}
+	}
+	if(massSquared==0.0){ propagatorSumWithZeroMass=sum/(L0*L1*L2*L3); }
+	std::cout << "effectivePotential::computePropagatorSum(" <<massSquared <<") = " <<sum/(L0*L1*L2*L3) <<std::endl;
 	return sum/(L0*L1*L2*L3);
 }
 
@@ -376,7 +420,7 @@ void effectivePotential::set_N_f(int new_N_f){ N_f = new_N_f; if(y_t!=-1.0 && y_
 void effectivePotential::set_lambdaToStabilityBound() //lambda \geq -(30/48 + 24 P_G)\lambda_6.  P_G=goldstone propagator sum (without zero mode)
 {
 	if(lambda_6==0.0){ lambda=0.0; }
-	lambda = -(30.0 / 48.0 + 24.0*propagatorSumWithZeroMass)*lambda_6;
+	lambda = -(30.0 / 48.0 + 24.0*computePropagatorSum(0.0))*lambda_6;
 }
 
 void effectivePotential::set_MassSquared(double new_m0Squared, double new_mHSquared)//clears the mass vectors and sets the given values as first entries
@@ -392,7 +436,7 @@ void effectivePotential::resetConstants(double new_rho, double new_r, int new_N_
 		rho=new_rho;
 		r=new_r;
 		N_f=new_N_f;
-		if(vev != -1.0){ getFermionicContribution(); }
+		if(vev != -1.0 && y_t!=-1.0 && y_b!=-1.0){ getFermionicContribution(); }
 	}
 }
 
@@ -425,6 +469,7 @@ double effectivePotential::get_mHSquared(){ if(!(mHSquared.empty())){ return *(m
 
 double effectivePotential::get_mH_in_GeV(){ if(!(mHSquared.empty())){ return cutoff_in_GeV*sqrt(*(mHSquared.rbegin())); } else{ return 0.0; } }
 
+
 void effectivePotential::initializeTreeLevel()
 {
 	if(vev==-1.0 || y_t ==-1.0 || y_b==-1.0)
@@ -436,11 +481,11 @@ void effectivePotential::initializeTreeLevel()
 	m0Squared.clear();
 	mHSquared.clear();
 	double m0Squared_tree=-U_fp/vev - 4.0*vev*vev*lambda -6.0*vev*vev*vev*vev*lambda_6;
-	//if negative set it to 0
-	if(m0Squared_tree < 0.0){ m0Squared.push_back(0.0); }
-	else{ m0Squared.push_back(m0Squared_tree); }	
+// 	if(m0Squared_tree < 0.0){ m0Squared.push_back(0.0); }//NOTE why would you do this?? m0^2 can be negative
+// 	else{ m0Squared.push_back(m0Squared_tree); }
+	m0Squared.push_back(m0Squared_tree);	
 	double mHSquared_tree=U_fpp + m0Squared_tree + 12.0*vev*vev*lambda + 30.0*vev*vev*vev*vev*lambda_6;
-	if(mHSquared_tree < 0.0){ mHSquared.push_back(0.0); }
+	if(mHSquared_tree < 0.0){ mHSquared.push_back(0.0); } //might be reasonable at treelevel
 	else{ mHSquared.push_back(mHSquared_tree); }
 }
 
@@ -449,6 +494,12 @@ void effectivePotential::initializeTreeLevel()
 
 double effectivePotential::iterateMass_withM0inPropSumsAndBosonicDet()
 {
+	//NOTE not lowMem support ;-) does not work anyway
+	if(lowMem)
+	{
+		std::cerr <<"Error, effectivePotential::iterateMass_withM0inPropSumsAndBosonicDet() not expected to be started with lowMem flag set!" <<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no startvalues for iteration" <<std::endl; initializeTreeLevel(); }
 	
 	//
@@ -503,16 +554,6 @@ double effectivePotential::iterateMass_withM0inPropSumsAndBosonicDet()
 
 
 
-/*
-double effectivePotential::iterateMass_withMassInPropSumByHandAndBosonicDet()
-{
-	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no startvalues for iteration" <<std::endl; initializeTreeLevel(); }
-	double last_mHSquared = *(--mHSquared.end());
-	double last_m0Squared = *(--m0Squared.end());
-	
-
-
-}*/
 
 
 double effectivePotential::iterateMassDetermination_withMassInPropSumByHand()
@@ -521,20 +562,21 @@ double effectivePotential::iterateMassDetermination_withMassInPropSumByHand()
 	double last_mHSquared = *(--mHSquared.end());
 	double last_m0Squared = *(--m0Squared.end());
 // 	std::cout <<"last_mHSquared:  " <<last_mHSquared  <<std::endl;
+	double GoldstonePropagatorSum=computePropagatorSum(0.0);
 	double HiggsPropagatorSum=computePropagatorSum(last_mHSquared);
 	//new m0
 	double new_m0Squared=-U_fp/vev -4.0*vev*vev*lambda -6.0*vev*vev*vev*vev*lambda_6; //treelevel
 // 	std::cout <<"new_m0Squared 1 " <<new_m0Squared <<std::endl;
-	new_m0Squared+= -12.0*lambda*(HiggsPropagatorSum + propagatorSumWithZeroMass);
+	new_m0Squared+= -12.0*lambda*(HiggsPropagatorSum + GoldstonePropagatorSum);
 // 	std::cout <<"new_m0Squared 2 " <<new_m0Squared <<std::endl;
-	new_m0Squared+= -lambda_6*(90.0*HiggsPropagatorSum*HiggsPropagatorSum + 108.0*propagatorSumWithZeroMass*HiggsPropagatorSum + 90.0*propagatorSumWithZeroMass*propagatorSumWithZeroMass);
+	new_m0Squared+= -lambda_6*(90.0*HiggsPropagatorSum*HiggsPropagatorSum + 108.0*GoldstonePropagatorSum*HiggsPropagatorSum + 90.0*GoldstonePropagatorSum*GoldstonePropagatorSum);
 // 	std::cout <<"new_m0Squared 3 " <<new_m0Squared <<std::endl;
-	new_m0Squared+= -vev*vev*lambda_6*(60.0*HiggsPropagatorSum + 36.0*propagatorSumWithZeroMass);
+	new_m0Squared+= -vev*vev*lambda_6*(60.0*HiggsPropagatorSum + 36.0*GoldstonePropagatorSum);
 // 	std::cout <<"new_m0Squared 4 " <<new_m0Squared <<std::endl;
 	double new_mHSquared=U_fpp + new_m0Squared + 12.0*vev*vev*lambda + 30.0*vev*vev*vev*vev*lambda_6; //treelevel
-	new_mHSquared += 12.0*lambda*(HiggsPropagatorSum + propagatorSumWithZeroMass);
-	new_mHSquared += lambda_6*(90.0*HiggsPropagatorSum*HiggsPropagatorSum + 108.0*propagatorSumWithZeroMass*HiggsPropagatorSum + 90.0*propagatorSumWithZeroMass*propagatorSumWithZeroMass);
-	new_mHSquared += vev*vev*lambda_6*(180.0*HiggsPropagatorSum + 108.0*propagatorSumWithZeroMass);
+	new_mHSquared += 12.0*lambda*(HiggsPropagatorSum + GoldstonePropagatorSum);
+	new_mHSquared += lambda_6*(90.0*HiggsPropagatorSum*HiggsPropagatorSum + 108.0*GoldstonePropagatorSum*HiggsPropagatorSum + 90.0*GoldstonePropagatorSum*GoldstonePropagatorSum);
+	new_mHSquared += vev*vev*lambda_6*(180.0*HiggsPropagatorSum + 108.0*GoldstonePropagatorSum);
 	m0Squared.push_back(new_m0Squared);
 	mHSquared.push_back(new_mHSquared);
 	return (std::abs(new_m0Squared - last_m0Squared) + std::abs(new_mHSquared - last_mHSquared) );
@@ -545,6 +587,12 @@ double effectivePotential::iterateMassDetermination_withMassInPropSumByHand()
 
 bool effectivePotential::fillVectorWithEigenvaluesAndPrefac( std::vector< std::pair< std::complex< double >, std::complex< double > > > &toBeFilled )
 {
+	//not with lowMem feature!!
+	if(lowMem)
+	{
+		std::cerr <<"Error, effectivePotential::fillVectorWithEigenvaluesAndPrefac, not expected to be started with lowMem flag set!" <<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if(y_t==-1.0 || y_b==-1.0)
 	{
 		std::cerr <<"Error not set!" <<std::endl;
@@ -585,6 +633,11 @@ bool effectivePotential::plotPotentialToStream_withMassInPropSumByHand(double mi
 {
 	//U=U_f + phi^2*[m0^2/2 + 6*lambda*(P_H+P_G) + lambda_6*(45*P_H^2+54*P_H*P_G+45*P_G^2)] + phi^4[lambda + lambda_6*(15*P_h+9*P_G)] + phi^6*lambda_6
 	//U=U_f + phi^2*A + phi^4*B + phi^6*lambda_6
+	if(lowMem)
+	{
+		std::cerr <<"Error, effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand, not expected to be started with lowMem flag set!" <<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no masses available" <<std::endl; return false; }
 	if((max-min)/step > maxCount || (max-min) < 0.0 || step <=0.0  )
 	{
@@ -677,6 +730,12 @@ bool effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand(d
 	//    == U_fp[v] + v*A + v^3*B + 6*lambda_6*v^5
 	//
 	//U_fp[v] = -2*N_f/V * 2*y_t * sum_p[ re((1-0.5*rho*nu)/(nu+y_t*v*(1-0.5*rho*nu))) ] + (same with y_b) 
+	
+	if(lowMem)
+	{
+		std::cerr <<"Error, effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand, not expected to be started with lowMem flag set!" <<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no masses available" <<std::endl; return false; }
 	
 	result_U_p.clear();
@@ -748,7 +807,11 @@ bool effectivePotential::scanPotential_secondDerivative_withMassInPropSumByHand(
 	//    B=4*lambda_6*(15*P_H + 9*P_G) + 12*lambda
 	//
 	//U_fpp[v] = -2*N_f/V * (-2*y_t^2 * sum_p[ re( (1-0.5*rho*nu)^2/(nu+y_t*v*(1-0.5*rho*nu))^2 ) ] + (same with y_b) 
-	
+	if(lowMem)
+	{
+		std::cerr <<"Error, effectivePotential::scanPotential_secondDerivative_withMassInPropSumByHand, not expected to be started with lowMem flag set!" <<std::endl;
+		exit(EXIT_FAILURE);
+	}
 	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no masses available" <<std::endl; return false; }
 	
 	result_U_pp.clear();

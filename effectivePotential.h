@@ -29,9 +29,12 @@
 // iterate: insert m_0^2 into the propagatorsums and the determinant until a stable result is found
 //
 // An alternative approach would be: Set Goldstone mass to zero and determine higgs boson mass by the curvature of the potential at v
-// determine iteratively m_0^2 until its stable NOTE: I don't know what to plug into the Determinant then
+// determine iteratively m_0^2 until its stable NOTE: I don't know what to plug into the Determinant then NOTE Stupid, determinant then not depending on vev
 //
 // NOTE: There is the problem that occurs, when m_0^2 gets large negative (such that \hat{p}^2 + m_0^2 + lambda*xxx get negative 
+//
+//will add a lowMem feature, without storing the momenta
+
 
 class effectivePotential
 {
@@ -65,6 +68,9 @@ class effectivePotential
 	//maxCount for scans of potential
 	static const int maxCount=10000;
 	
+	//bool for lowMem 
+	bool lowMem;
+	
 	//================================
 	void setConstants(); //sets (rho, r, N_f and vev_In_GeV);
 	
@@ -85,8 +91,8 @@ class effectivePotential
 // 	void computeBosonicDeterminantAndPropagatorSums_WithMassesByHand(bool updateDeterminant); NOTE nonsense
 
 	public:
-	effectivePotential(int l0, int l1, int l2, int l3); //can determine propagatorSum
-	effectivePotential(int l0, int l1, int l2, int l3, double cutoff, double yt, double yb); //can determine fermionic contribution
+	effectivePotential(int l0, int l1, int l2, int l3, bool lowMemUsage=false); //can determine propagatorSum
+	effectivePotential(int l0, int l1, int l2, int l3, double cutoff, double yt, double yb, bool lowMemUsage=false); //can determine fermionic contribution
 	
 	double computePropagatorSum(double massSquared);
 	double computePropagatorSum();

@@ -78,7 +78,8 @@ void prepareParameterMaps( std::map< std::string, double > &paraD, std::map< std
 	//e.g.: _cut_x.x_; 
 	paraS["derivativeFileBody"]="";
 	
-	
+	//if set to one, no momenta will be stored, so larger volumes are possible (but slower, if lambdas are non-zero)
+	paraI["LowMemoryUsage"]=0;
 	
 	
 }

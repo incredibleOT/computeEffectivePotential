@@ -71,7 +71,11 @@ int main(int narg,char **arg)
 	
 	
 	//initiallize effPot
-	effectivePotential effPot(parametersInt["L0"], parametersInt["L1"], parametersInt["L2"], parametersInt["L3"]);
+	bool useLowMemory(false);
+	if( parametersInt["LowMemoryUsage"]!=0 ){ useLowMemory=true; }
+	
+		
+	effectivePotential effPot(parametersInt["L0"], parametersInt["L1"], parametersInt["L2"], parametersInt["L3"], useLowMemory);
 // 	effPot.set_cutoff( parametersDouble["cutoff_in_GeV"] );
 	if(parametersIsSet["N_f"]){ effPot.set_N_f(parametersInt["N_f"]); }
 	if(parametersIsSet["rho"]){ effPot.set_rho(parametersDouble["rho"]); }
@@ -179,6 +183,7 @@ int main(int narg,char **arg)
 						int resultFlag(0);
 						//now start the action
 						effPot.initializeTreeLevel();
+						cout <<"treelevel: m0Squared = " <<effPot.get_m0Squared() <<"   mHSquared = " <<effPot.get_mHSquared() <<endl;
 						double convergence_freeze_dummy(0.0);
 						for(int i=1; i<=500; ++i)
 						{
