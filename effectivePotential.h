@@ -76,6 +76,7 @@ class effectivePotential
 	
 	bool getFermionicContribution(); //assumes periodic BC so far
 	bool getFermionicContribution_all_L_equal(); //specialization if all L are equal
+	bool getFermionicContribution_Lcube_times_2L(); //specialization for L^3x2L are equal
 // 	bool getFermionicContribution_three_L_equal(); //speciallization if 3 L are equal
 	
 	
