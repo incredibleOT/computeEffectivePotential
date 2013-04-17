@@ -60,16 +60,21 @@ bool effectivePotential::getFermionicContribution()
 	U_f=0.0;
 	U_fp=0.0;
 	U_fpp=0.0;
+	double dummy_l0_p,dummy_l1_p,dummy_l2_p; //to reduce inaccuracy by adding up a lot of doubles
+	double dummy_l0_pp,dummy_l1_pp,dummy_l2_pp; //to reduce inaccuracy by adding up a lot of doubles
 	if(y_t==0.0 && y_b==0.0){ return true; }
 	for(int l0=0; l0<L0; ++l0)
 	{
 		double p0 = two_PI * l0 * one_ov_L0 ; //2*pi*n/L
+		dummy_l0_p=0.0; dummy_l0_pp=0.0;
 		for(int l1=0; l1<L1; ++l1)
 		{
 			double p1 = two_PI * l1 * one_ov_L1 ;
+			dummy_l1_p=0.0; dummy_l1_pp=0.0;
 			for(int l2=0; l2<L2; ++l2)
 			{
 				double p2 = two_PI * l2 * one_ov_L2 ;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
 				for(int l3=0; l3<L3; ++l3)
 				{
 					double p3 = two_PI * l3 * one_ov_L3 ;
@@ -82,16 +87,24 @@ bool effectivePotential::getFermionicContribution()
 					//U_fp=\sum{2*y*Re[w/z]}
 					//U_fpp=\sum{-2*y^2*Re[w^2/z^2]}
 // 					U_f   += real( log( z_t * conj(z_t) ) + log( z_b * conj(z_b) ) ); //Never used no need
-					U_fp  += 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
-					U_fpp -= 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+					dummy_l2_p  += 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
+					dummy_l2_pp -= 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+// 					std::cout <<"p0=" <<p0 <<"   p1=" <<p1 <<"   p2=" <<p2 <<"   p3=" <<p3 <<"   result_p=" <<2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() <<std::endl;
+					
 				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
 			}
+			dummy_l0_p+=dummy_l1_p; dummy_l0_pp+=dummy_l1_pp;
 		}
-	}
+		U_fp+=dummy_l0_p; U_fpp+=dummy_l0_pp;
+	};
 	//multiply with -2*N_f/V
 // 	U_f   *= (-2.0*N_f/(L0*L1*L2*L3)); Never used, no need
-	U_fp  *= (-2.0*N_f/(L0*L1*L2*L3));
-	U_fpp *= (-2.0*N_f/(L0*L1*L2*L3));
+	U_fp  *= (-2.0*N_f);
+	U_fpp *= (-2.0*N_f);
+	U_fp/=static_cast< double >(L0); U_fp/=static_cast< double >(L1); U_fp/=static_cast< double >(L2); U_fp/=static_cast< double >(L3);
+	U_fpp/=static_cast< double >(L0); U_fpp/=static_cast< double >(L1); U_fpp/=static_cast< double >(L2); U_fpp/=static_cast< double >(L3);
+	std::cout <<"U_fp=" <<U_fp <<"   U_fpp=" <<U_fpp <<std::endl;
 	return true;
 }
 
@@ -116,25 +129,28 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 	U_fp=0.0;
 	U_fpp=0.0;
 	if(y_t==0.0 && y_b==0.0){ return true; }
-	
 	//there are in total xx cases:
 	// all momenta are different {p,q,r,s} => 4!=24 possibilities
-	// 2 momenta are equal       {p,q,r,r}=> 4*3=12 possibilities
+	// 2 momenta are equal       {p,q,r,r}=> 4*3=12 possibilities NOTE catch all 3 cases, namely, that r is the smallest, medium and largest momentum!!
 	// 2+2momenta are equal      {p,p,q,q}=> 4*3/2=6possibilities
-	// 3 momenta are equal       {p,q,q,q}=> 4 possibilities
+	// 3 momenta are equal       {p,q,q,q}=> 4 possibilities NOTE catch all 2 cases, namely, that q is the smaller and larger momentum!!
 	// all momenta are equal     {p,p,p,p}=> 1 possibiity
 	
-	
+	double dummy_l0_p,dummy_l1_p,dummy_l2_p; //to reduce inaccuracy by adding up a lot of doubles
+	double dummy_l0_pp,dummy_l1_pp,dummy_l2_pp; //to reduce inaccuracy by adding up a lot of doubles
 	for(int l0=0; l0<L0; ++l0)
 	{
 		//1st: all momenta different: each kombination comes 24 (4!) times
 		double p0 = two_PI * l0 * one_ov_L ; //2*pi*n/L
+		dummy_l0_p=0.0; dummy_l0_pp=0.0;
 		for(int l1=l0+1; l1<L1; ++l1)
 		{
 			double p1 = two_PI * l1 * one_ov_L ;
+			dummy_l1_p=0.0; dummy_l1_pp=0.0;
 			for(int l2=l1+1; l2<L2; ++l2)
 			{
 				double p2 = two_PI * l2 * one_ov_L ;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
 				for(int l3=l2+1; l3<L3; ++l3)
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
@@ -147,18 +163,28 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					//U_fp=\sum{2*y*Re[w/z]}
 					//U_fpp=\sum{-2*y^2*Re[w^2/z^2]}
 // 					U_f   += real( log( z_t * conj(z_t) ) + log( z_b * conj(z_b) ) ); //Never used no need
-					U_fp  += 24.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
-					U_fpp -= 24.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+					dummy_l2_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
 				}
+				//2nd(a): two momenta are equal (the largest one): each combination comes 12 times
+				{
+					//int l3=l2; //not needed
+					double p3 = p2 ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					dummy_l2_p  += 12.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 12.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
 			}
-		}
-		//2nd: two momenta are equal: each combination comes 12 times
-		{
-			int l1=l0;
-			double p1 = p0 ; //meaning l1=l0
-			for(int l2=l1+1; l2<L2; ++l2)
+			//2nd(b): two momenta are equal (the medium one): each combination comes 12 times
 			{
-				double p2 = two_PI * l2 * one_ov_L ;
+				int l2=l1;
+				double p2 = p1;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
 				for(int l3=l2+1; l3<L3; ++l3)
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
@@ -167,8 +193,33 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
-					U_fp  += 12.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
-					U_fpp -= 12.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+					dummy_l2_p  += 12.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 12.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
+			}
+			dummy_l0_p+=dummy_l1_p; dummy_l0_pp+=dummy_l1_pp;
+		}
+		//2nd(c): two momenta are equal (the smallest one): each combination comes 12 times 
+		{
+			//NOTE here only the case where the lowest momentum comes twice is dealt with
+			int l1=l0;
+			double p1 = p0 ; //meaning l1=l0
+			dummy_l1_p=0.0; dummy_l1_pp=0.0;
+			for(int l2=l1+1; l2<L2; ++l2)
+			{
+				double p2 = two_PI * l2 * one_ov_L ;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
+				for(int l3=l2+1; l3<L3; ++l3)
+				{
+					double p3 = two_PI * l3 * one_ov_L ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					dummy_l2_p  += 12.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 12.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
 				}
 				//3rd: 2+2 momenta are equal: comes 6 times
 				{
@@ -179,14 +230,28 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
-					U_fp  += 6.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
-					U_fpp -= 6.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+					dummy_l2_p  += 6.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 6.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
 				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
 			}
-			//4th: 3 momenta are equal: 4 possibilities
+			//4th: 3 momenta are equal: 4 possibilities NOTE only the case where the smaller is equal is treated
 			{
 				int l2=l1;
 				double p2 = p1 ;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
+				for(int l3=0; l3<l2; ++l3)
+				{
+					double p3 = two_PI * l3 * one_ov_L ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					dummy_l2_p  += 4.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 4.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				//4th: 3 momenta are equal: 4 possibilities NOTE only the case where the larger is equal is treated
 				for(int l3=l2+1; l3<L3; ++l3)
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
@@ -195,8 +260,8 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
-					U_fp  += 4.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
-					U_fpp -= 4.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+					dummy_l2_p  += 4.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 4.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
 				}
 				//5th: all momenta are equal: 1 possibility
 				{
@@ -207,11 +272,14 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
-					U_fp  += 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
-					U_fpp -= 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+					dummy_l2_p  += 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
+					dummy_l2_pp -= 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
 				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
 			}
+			dummy_l0_p+=dummy_l1_p; dummy_l0_pp+=dummy_l1_pp;
 		}
+		U_fp+=dummy_l0_p; U_fpp+=dummy_l0_pp;
 	}
 	//multiply with -2*N_f/V
 // 	U_f   *= (-2.0*N_f/(L0*L1*L2*L3)); Never used, no need
@@ -219,7 +287,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 	U_fpp *= (-2.0*N_f);
 	U_fp/=static_cast< double >(L0); U_fp/=static_cast< double >(L1); U_fp/=static_cast< double >(L2); U_fp/=static_cast< double >(L3);
 	U_fpp/=static_cast< double >(L0); U_fpp/=static_cast< double >(L1); U_fpp/=static_cast< double >(L2); U_fpp/=static_cast< double >(L3);
-	
+	std::cout <<"U_fp=" <<U_fp <<"   U_fpp=" <<U_fpp <<std::endl;
 	//
 	return true;
 }
@@ -612,6 +680,7 @@ void effectivePotential::initializeTreeLevel()
 // 	else{ m0Squared.push_back(m0Squared_tree); }
 	m0Squared.push_back(m0Squared_tree);	
 	double mHSquared_tree=U_fpp + m0Squared_tree + 12.0*vev*vev*lambda + 30.0*vev*vev*vev*vev*lambda_6;
+// 	mHSquared_tree=0.0;
 	if(mHSquared_tree < 0.0){ mHSquared.push_back(0.0); } //might be reasonable at treelevel
 	else{ mHSquared.push_back(mHSquared_tree); }
 }
