@@ -75,6 +75,9 @@ class effectivePotential
 	void setConstants(); //sets (rho, r, N_f and vev_In_GeV);
 	
 	bool getFermionicContribution(); //assumes periodic BC so far
+	bool getFermionicContribution_all_L_equal(); //specialization if all L are equal
+// 	bool getFermionicContribution_three_L_equal(); //speciallization if 3 L are equal
+	
 	
 	void get_pSquared();
 	
@@ -94,8 +97,14 @@ class effectivePotential
 	effectivePotential(int l0, int l1, int l2, int l3, bool lowMemUsage=false); //can determine propagatorSum
 	effectivePotential(int l0, int l1, int l2, int l3, double cutoff, double yt, double yb, bool lowMemUsage=false); //can determine fermionic contribution
 	
-	double computePropagatorSum(double massSquared);
 	double computePropagatorSum();
+	double computePropagatorSum(double massSquared);
+// 	double computePropagatorSum_all_L_equal()(double massSquared); //specialization if all L are equal
+// 	double computePropagatorSum_three_L_equal()(double massSquared); //speciallization if 3 L are equal
+	
+	
+	
+	
 		
 	//sets values by hand
 	void set_yukawa(double yt, double yb); //also (re)computes fermionic contribution, if cutoff (i.e. vev) is given;

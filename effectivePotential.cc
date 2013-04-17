@@ -46,7 +46,7 @@ void effectivePotential::setConstants()
 //compute fermionic contributions
 bool effectivePotential::getFermionicContribution()
 {
-	
+	if(L0==L1 && L0==L2 && L0==L3){ return getFermionicContribution_all_L_equal(); }
 	if(vev==-1.0 || y_t==-1.0 || y_b==-1.0)
 	{
 		std::cerr <<"Error, vev and/or yukawa couplings not set!" <<std::endl;
@@ -96,6 +96,133 @@ bool effectivePotential::getFermionicContribution()
 }
 
 
+//computes the fermionic contribution to U' and U'' (U itself is not needed)
+//this version takes advantage of the fact that all L are equal
+bool effectivePotential::getFermionicContribution_all_L_equal()
+{
+	if(!(L0==L1 && L0==L2 && L0==L3))
+	{
+		std::cerr <<"Error, not all extends equal in effectivePotential::getFermionicContribution_all_L_equal()" <<std::endl;
+		return false;
+	}
+	if(vev==-1.0 || y_t==-1.0 || y_b==-1.0)
+	{
+		std::cerr <<"Error, vev and/or yukawa couplings not set!" <<std::endl;
+		return false;
+	}
+	const double two_PI(atan(1) * 8.0);
+	double one_ov_L(1.0/L0);
+	U_f=0.0;
+	U_fp=0.0;
+	U_fpp=0.0;
+	if(y_t==0.0 && y_b==0.0){ return true; }
+	
+	//there are in total xx cases:
+	// all momenta are different {p,q,r,s} => 4!=24 possibilities
+	// 2 momenta are equal       {p,q,r,r}=> 4*3=12 possibilities
+	// 2+2momenta are equal      {p,p,q,q}=> 4*3/2=6possibilities
+	// 3 momenta are equal       {p,q,q,q}=> 4 possibilities
+	// all momenta are equal     {p,p,p,p}=> 1 possibiity
+	
+	
+	for(int l0=0; l0<L0; ++l0)
+	{
+		//1st: all momenta different: each kombination comes 24 (4!) times
+		double p0 = two_PI * l0 * one_ov_L ; //2*pi*n/L
+		for(int l1=l0+1; l1<L1; ++l1)
+		{
+			double p1 = two_PI * l1 * one_ov_L ;
+			for(int l2=l1+1; l2<L2; ++l2)
+			{
+				double p2 = two_PI * l2 * one_ov_L ;
+				for(int l3=l2+1; l3<L3; ++l3)
+				{
+					double p3 = two_PI * l3 * one_ov_L ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					//U_f=\sum{log(z*z^*)} (factor of -2N_f/V comes in the end)
+					//U_fp=\sum{2*y*Re[w/z]}
+					//U_fpp=\sum{-2*y^2*Re[w^2/z^2]}
+// 					U_f   += real( log( z_t * conj(z_t) ) + log( z_b * conj(z_b) ) ); //Never used no need
+					U_fp  += 24.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
+					U_fpp -= 24.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+				}
+			}
+		}
+		//2nd: two momenta are equal: each combination comes 12 times
+		{
+			int l1=l0;
+			double p1 = p0 ; //meaning l1=l0
+			for(int l2=l1+1; l2<L2; ++l2)
+			{
+				double p2 = two_PI * l2 * one_ov_L ;
+				for(int l3=l2+1; l3<L3; ++l3)
+				{
+					double p3 = two_PI * l3 * one_ov_L ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					U_fp  += 12.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
+					U_fpp -= 12.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+				}
+				//3rd: 2+2 momenta are equal: comes 6 times
+				{
+					//int l3=l2 //not needed
+					double p3 = p2 ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					U_fp  += 6.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
+					U_fpp -= 6.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+				}
+			}
+			//4th: 3 momenta are equal: 4 possibilities
+			{
+				int l2=l1;
+				double p2 = p1 ;
+				for(int l3=l2+1; l3<L3; ++l3)
+				{
+					double p3 = two_PI * l3 * one_ov_L ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					U_fp  += 4.0*2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
+					U_fpp -= 4.0*2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+				}
+				//5th: all momenta are equal: 1 possibility
+				{
+					//int l3=l2 //not needed
+					double p3 = p2 ;
+					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
+					std::complex< double > w( ew/(2.0*rho) );
+					w=1.0-w; //w = 1 - 1/(2 rho)*nu
+					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
+					std::complex< double > z_b(ew + vev*y_b*w);
+					U_fp  += 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real();
+					U_fpp -= 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real();
+				}
+			}
+		}
+	}
+	//multiply with -2*N_f/V
+// 	U_f   *= (-2.0*N_f/(L0*L1*L2*L3)); Never used, no need
+	U_fp  *= (-2.0*N_f);
+	U_fpp *= (-2.0*N_f);
+	U_fp/=static_cast< double >(L0); U_fp/=static_cast< double >(L1); U_fp/=static_cast< double >(L2); U_fp/=static_cast< double >(L3);
+	U_fpp/=static_cast< double >(L0); U_fpp/=static_cast< double >(L1); U_fpp/=static_cast< double >(L2); U_fpp/=static_cast< double >(L3);
+	
+	//
+	return true;
+}
 
 //fills the vector with all \hat{p}^2 = 4*\sum_mu(sin(p_mu)^2)
 void effectivePotential::get_pSquared()
