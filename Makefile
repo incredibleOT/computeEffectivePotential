@@ -4,7 +4,9 @@ CXX=g++
 CXXFLAGS= -Wall -Wextra -Wno-long-long -pedantic 
 
 
-OFILES = effectivePotential.o scanEffectivePotentialHelper.o
+OFILES= effectivePotential.o scanEffectivePotentialHelper.o
+
+effPotFiles=  effectivePotential_computePropagatorSum.cc effectivePotential_getFermionicContribution.cc effectivePotential.h
 
 
 # ##########################################
@@ -24,8 +26,9 @@ determineBoundAndPlotPotential.o: determineBoundAndPlotPotential.cc effectivePot
 
 
 ### ofiles
-effectivePotential.o: effectivePotential.cc effectivePotential.h
-	${CXX} ${CXXFLAGS} -c -o $@ $<
+effectivePotential.o: effectivePotential.cc   ${effPotFiles}
+	${CXX} ${CXXFLAGS} -c -o $@ $< ${effPotOfiles}
+
 
 scanEffectivePotentialHelper.o: scanEffectivePotentialHelper.cc scanEffectivePotentialHelper.h
 	${CXX} ${CXXFLAGS} -c -o $@ $<

@@ -74,6 +74,7 @@ class effectivePotential
 	//================================
 	void setConstants(); //sets (rho, r, N_f and vev_In_GeV);
 	
+	//Definitions are in effectivePotential_getFermionicContribution.cc
 	bool getFermionicContribution(); //assumes periodic BC so far
 	bool getFermionicContribution_all_L_equal(); //specialization if all L are equal
 	bool getFermionicContribution_Lcube_times_2L(); //specialization for L^3x2L are equal
@@ -98,13 +99,13 @@ class effectivePotential
 	effectivePotential(int l0, int l1, int l2, int l3, bool lowMemUsage=false); //can determine propagatorSum
 	effectivePotential(int l0, int l1, int l2, int l3, double cutoff, double yt, double yb, bool lowMemUsage=false); //can determine fermionic contribution
 	
+	
+	// Definitions are in effectivePotential_computePropagatorSum.cc
 	double computePropagatorSum();
 	double computePropagatorSum(double massSquared);
 	private:
 	double computePropagatorSum_lowMem_all_L_equal(double massSquared); //specialization for L^4 lattice in case of lowMem
 	public:
-// 	double computePropagatorSum_all_L_equal()(double massSquared); //specialization if all L are equal
-// 	double computePropagatorSum_three_L_equal()(double massSquared); //speciallization if 3 L are equal
 	
 	
 	
