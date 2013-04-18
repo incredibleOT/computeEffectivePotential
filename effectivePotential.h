@@ -100,6 +100,9 @@ class effectivePotential
 	
 	double computePropagatorSum();
 	double computePropagatorSum(double massSquared);
+	private:
+	double computePropagatorSum_lowMem_all_L_equal(double massSquared); //specialization for L^4 lattice in case of lowMem
+	public:
 // 	double computePropagatorSum_all_L_equal()(double massSquared); //specialization if all L are equal
 // 	double computePropagatorSum_three_L_equal()(double massSquared); //speciallization if 3 L are equal
 	
