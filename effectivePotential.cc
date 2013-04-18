@@ -107,8 +107,21 @@ std::complex< double > effectivePotential::computeAnalyticalEigenvalue(double p0
 	//\hat{p}^2 = 1/a^2 \sum_{\mu} 4 \sin{a p_\mu/2}^2
 	//\tilde{p}^2 = 1/a^2 \sum_{\mu} \sin{a p_\mu}^2
 	//NOTE: in philipp's thesis it's r/2 NOTE May be an ambiguity in the definition of r...
-	double p_tilde_sq=sin(p0)*sin(p0) + sin(p1)*sin(p1) + sin(p2)*sin(p2) + sin(p3)*sin(p3);
-	double p_hat_sq=4.0*(sin(p0*0.5)*sin(p0*0.5) + sin(p1*0.5)*sin(p1*0.5) + sin(p2*0.5)*sin(p2*0.5) + sin(p3*0.5)*sin(p3*0.5) );
+	double dummy=sin(p0); double p_tilde_sq=dummy*dummy;
+	dummy=sin(p1); p_tilde_sq+=dummy*dummy;
+	dummy=sin(p2); p_tilde_sq+=dummy*dummy;
+	dummy=sin(p3); p_tilde_sq+=dummy*dummy;
+	
+	dummy=sin(0.5*p0); double p_hat_sq = dummy*dummy;
+	dummy=sin(0.5*p1); p_hat_sq += dummy*dummy;
+	dummy=sin(0.5*p2); p_hat_sq += dummy*dummy;
+	dummy=sin(0.5*p3); p_hat_sq += dummy*dummy;
+	p_hat_sq*=4.0;
+	
+	
+	
+// 	double p_tilde_sq=sin(p0)*sin(p0) + sin(p1)*sin(p1) + sin(p2)*sin(p2) + sin(p3)*sin(p3);
+// 	double p_hat_sq=4.0*(sin(p0*0.5)*sin(p0*0.5) + sin(p1*0.5)*sin(p1*0.5) + sin(p2*0.5)*sin(p2*0.5) + sin(p3*0.5)*sin(p3*0.5) );
 	double one_ov_denom=1.0/sqrt(p_tilde_sq + (r*p_hat_sq - rho)*(r*p_hat_sq - rho) );
 	
 	return std::complex< double >(rho + rho*one_ov_denom*(r*p_hat_sq - rho) , rho*one_ov_denom*sqrt(p_tilde_sq) );

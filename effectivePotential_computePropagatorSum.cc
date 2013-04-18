@@ -184,3 +184,9 @@ double effectivePotential::computePropagatorSum_lowMem_all_L_equal(double massSq
 	return sum;
 }
 
+
+/*
+
+double effectivePotential::computePropagatorSum_lowMem_Lcube_times_2L(double massSquared)
+{
+	// in the spirit of xxx_all_L_equal we reuse equal momenta*/

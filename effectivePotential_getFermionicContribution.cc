@@ -22,6 +22,7 @@ bool effectivePotential::getFermionicContribution()
 	double one_ov_L1(1.0/L1);
 	double one_ov_L2(1.0/L2);
 	double one_ov_L3(1.0/L3);
+	double one_ov_twoRho=0.5/rho;
 	U_f=0.0;
 	U_fp=0.0;
 	U_fpp=0.0;
@@ -44,7 +45,7 @@ bool effectivePotential::getFermionicContribution()
 				{
 					double p3 = two_PI * l3 * one_ov_L3 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -90,6 +91,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 	}
 	const double two_PI(atan(1) * 8.0);
 	double one_ov_L(1.0/L0);
+	double one_ov_twoRho=0.5/rho;
 	U_f=0.0;
 	U_fp=0.0;
 	U_fpp=0.0;
@@ -120,7 +122,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -136,7 +138,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					//int l3=l2; //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -154,7 +156,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -179,7 +181,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -191,7 +193,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					//int l3=l2 //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -209,7 +211,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -221,7 +223,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -233,7 +235,7 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 					//int l3=l2 //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -288,6 +290,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 	}
 	const double two_PI(atan(1) * 8.0);
 	double one_ov_L(1.0/L);
+	double one_ov_twoRho=0.5/rho;
 	U_f=0.0;
 	U_fp=0.0;
 	U_fpp=0.0;
@@ -324,7 +327,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -342,7 +345,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 					//int l3=l2; //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -362,7 +365,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -388,7 +391,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -402,7 +405,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 					//int l3=l2 //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -422,7 +425,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -436,7 +439,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -450,7 +453,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 					//int l3=l2 //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -483,7 +486,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -497,7 +500,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 					//int l3=l2; //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -517,7 +520,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 				{
 					double p3 = two_PI * l3 * one_ov_L ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
@@ -531,7 +534,7 @@ bool effectivePotential::getFermionicContribution_Lcube_times_2L() //specializat
 					//int l3=l2; //not needed
 					double p3 = p2 ;
 					std::complex< double > ew( computeAnalyticalEigenvalue( p0,p1,p2,p3 ) ); //overlap eigenvalue nu
-					std::complex< double > w( ew/(2.0*rho) );
+					std::complex< double > w( ew*one_ov_twoRho );
 					w=1.0-w; //w = 1 - 1/(2 rho)*nu
 					std::complex< double > z_t(ew + vev*y_t*w); //z_i=nu + y*vev*w
 					std::complex< double > z_b(ew + vev*y_b*w);
