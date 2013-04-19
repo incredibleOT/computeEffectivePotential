@@ -77,6 +77,7 @@ class effectivePotential
 	//Definitions are in effectivePotential_getFermionicContribution.cc
 	bool getFermionicContribution(); //assumes periodic BC so far
 	bool getFermionicContribution_all_L_equal(); //specialization if all L are equal
+	bool getFermionicContribution_all_L_equal_useSymmetry(); //specialization if all L are equal, uses that comtribution of p_mu=(pi-x)/L and p_mu=(pi+x)/L are equal
 	bool getFermionicContribution_Lcube_times_2L(); //specialization for L^3x2L are equal
 // 	bool getFermionicContribution_three_L_equal(); //speciallization if 3 L are equal
 	

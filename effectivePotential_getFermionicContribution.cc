@@ -5,7 +5,11 @@
 //compute fermionic contributions to the effective potential (only the two derivatives, since the logs are not needed but expensive)
 bool effectivePotential::getFermionicContribution()
 {
-	if(L0==L1 && L0==L2 && L0==L3){ return getFermionicContribution_all_L_equal(); }
+	if(L0==L1 && L0==L2 && L0==L3)
+	{
+// 		return getFermionicContribution_all_L_equal();
+		return getFermionicContribution_all_L_equal_useSymmetry(); 
+	}
 	
 	if( (L0==L1 && L0==L2 && 2*L0==L3) || (L0==L1 && 2*L0==L2 && L0==L3) || (2*L0==L1 && L0==L2 && L0==L3) || (L1==L2 && L1==L3 && 2*L1==L0) )
 	{
@@ -261,6 +265,359 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 
 
 
+
+//this function uses that the eigenvalues are equal for p_mu=pi/L+x and pi/L-x
+//the principle of the summation is shown in summation_principle.cc
+//will first code it up for only even L (odd should be just some ifs...) 
+bool effectivePotential::getFermionicContribution_all_L_equal_useSymmetry()
+{
+	if(!(L0==L1 && L0==L2 && L0==L3))
+	{
+		std::cerr <<"Error, not all extends equal in effectivePotential::getFermionicContribution_all_L_equal()" <<std::endl;
+		return false;
+	}
+	if(vev==-1.0 || y_t==-1.0 || y_b==-1.0)
+	{
+		std::cerr <<"Error, vev and/or yukawa couplings not set!" <<std::endl;
+		return false;
+	}
+	const double two_PI(atan(1) * 8.0);
+	int L=L0;
+	int half_L=L/2;
+	double one_ov_L(1.0/L0);
+	double one_ov_twoRho=0.5/rho;
+	
+	U_f=0.0;
+	U_fp=0.0;
+	U_fpp=0.0;
+	if(y_t==0.0 && y_b==0.0){ return true; }
+	bool evenL= (L%2==0) ? true : false;
+// 	if(!evenL)
+// 	{
+// 		std::cerr <<"Odd improvement not installed yet" <<std::endl;
+// 		return false;
+// 	}
+	int loopLimit= evenL? half_L : half_L+1;
+// 	std::cout <<" loopLimit: " <<loopLimit <<"   half_L: " <<half_L <<std::endl;
+	
+	double p0,p1,p2,p3;
+	double dummy_l0_p,dummy_l1_p,dummy_l2_p; //to reduce inaccuracy by adding up a lot of doubles
+	double dummy_l0_pp,dummy_l1_pp,dummy_l2_pp; //to reduce inaccuracy by adding up a lot of doubles
+	std::complex< double > ew, w, z_t, z_b;
+	
+	for(int l0=1; l0<loopLimit; ++l0)
+	{
+		p0=two_PI * l0 * one_ov_L;
+		dummy_l0_p=0.0; dummy_l0_pp=0.0;
+		for(int l1=l0+1; l1<loopLimit; ++l1)
+		{
+			p1=two_PI * l1 * one_ov_L;
+			dummy_l1_p=0.0; dummy_l1_pp=0.0;
+			for(int l2=l1+1; l2<loopLimit; ++l2)
+			{
+				p2=two_PI * l2 * one_ov_L;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=two_PI * l3 * one_ov_L; // a1 - 384
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 384.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 384.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=p2; // b1(C) - 192
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				if(evenL)
+				{
+					p3=two_PI * half_L * one_ov_L; //a2 - 192
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; //a3 -192
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
+			}
+			{
+				int l2=l1;
+				p2=p1;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=two_PI * l3 * one_ov_L; // b1(B) - 192
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=p2; // c1(B) - 64
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 64.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 64.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				if(evenL)
+				{
+					p3=two_PI * half_L * one_ov_L; //b2(B) - 96
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; // b3(B) -96
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+			if(evenL)
+			{
+				p2=two_PI * half_L * one_ov_L;
+				{
+					p3=two_PI * half_L * one_ov_L; //b5 - 48
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 48.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 48.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; // a4 -96
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // b6 -48
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 48.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 48.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
+			}
+			dummy_l0_p+=dummy_l1_p; dummy_l0_pp+=dummy_l1_pp;
+		}
+		{
+			int l1=l0;
+			p1=p0;
+			dummy_l1_p=0.0; dummy_l1_pp=0.0;
+			for(int l2=l1+1; l2<loopLimit; ++l2)
+			{
+				p2=two_PI * l2 * one_ov_L;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=two_PI * l3 * one_ov_L; // b1(A) - 192
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=p2; // d1 - 96
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				if(evenL)
+				{
+					p3=two_PI * half_L * one_ov_L; //b2(A) - 96
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; //b3(A) -96
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
+			}
+			{
+				int l2=l1;
+				p2=p1;
+				dummy_l2_p=0.0; dummy_l2_pp=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=two_PI * l3 * one_ov_L; // c1(A) - 64
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 64.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 64.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=p2; // e1  16
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 16.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 16.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+					//std::cout <<"p0=" <<p0 <<"   p1=" <<p1 <<"   p2=" <<p2 <<"   p3=" <<p3 <<"   dummy_l2_p" <<dummy_l2_p <<std::endl;
+				}
+				if(evenL)
+				{
+					p3=two_PI * half_L * one_ov_L; //c2 - 32
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 32.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 32.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; // c3 -32
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 32.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 32.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+			if(evenL)
+			{
+				p2=two_PI * half_L * one_ov_L;
+				{
+					p3=two_PI * half_L * one_ov_L; //d2 - 24
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; // b4 -48
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 48.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 48.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // d3 -24
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+		}
+		if(evenL)
+		{
+			p1=two_PI * half_L * one_ov_L;
+			{
+				p2=two_PI * half_L * one_ov_L;
+				{
+					p3=two_PI * half_L * one_ov_L; //c4 - 8
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 8.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 8.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; // b7 -24
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // b8 -24
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+		}
+		{
+			p1=0;
+			{
+				p2=0;
+				{
+					p3=0; // c5 - 8
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 8.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 8.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				dummy_l1_p+=dummy_l2_p; dummy_l1_pp+=dummy_l2_pp;
+			}
+			dummy_l0_p+=dummy_l1_p; dummy_l0_pp+=dummy_l1_pp;
+		}
+		U_fp+=dummy_l0_p; U_fpp+=dummy_l0_pp;
+	}
+	dummy_l2_p=0.0; dummy_l2_pp=0.0;
+	if(evenL)
+	{
+		p0=two_PI * half_L * one_ov_L;
+		{
+			p1=two_PI * half_L * one_ov_L;
+			{
+				p2=two_PI * half_L * one_ov_L;
+				{
+					p3=two_PI * half_L * one_ov_L; //e2 - 1 
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += ( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= ( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+				{
+					p3=0; // c7 -4
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 4.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 4.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // d4 -6
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 6.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 6.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+		}
+		{
+			p1=0;
+			{
+				p2=0;
+				{
+					p3=0; // c6 - 4
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += 4.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= 4.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+		}
+	}
+	{
+		p0=0;
+		{
+			p1=0;
+			{
+				p2=0;
+				{
+					p3=0; // e3 - 1
+					ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + vev*y_t*w;    z_b = ew + vev*y_b*w;
+					dummy_l2_p  += ( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+					dummy_l2_pp -= ( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+				}
+			}
+		}
+		U_fp+=dummy_l2_p; U_fpp+=dummy_l2_pp; //NOTE different dummy here
+	}
+	//multiply with -2*N_f/V
+// 	U_f   *= (-2.0*N_f/(L0*L1*L2*L3)); Never used, no need
+	U_fp  *= (-2.0*N_f);
+	U_fpp *= (-2.0*N_f);
+	U_fp/=static_cast< double >(L0); U_fp/=static_cast< double >(L1); U_fp/=static_cast< double >(L2); U_fp/=static_cast< double >(L3);
+	U_fpp/=static_cast< double >(L0); U_fpp/=static_cast< double >(L1); U_fpp/=static_cast< double >(L2); U_fpp/=static_cast< double >(L3);
+	std::cout <<"U_fp=" <<U_fp <<"   U_fpp=" <<U_fpp <<std::endl;
+	//
+	return true;
+}
+	
+	
+	
+	
+	
+	
 
 
 //computes the fermionic contribution to U' and U'' (U itself is not needed)

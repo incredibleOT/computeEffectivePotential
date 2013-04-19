@@ -202,6 +202,10 @@ p<q<r<s
 				{
 					All are different - comes 24*16=384 times a1
 				}
+				{
+					l3=l2
+					largest 2 are equal - comes 12*16=192 times  b1(C)
+				}
 				{	
 					l3=L/2
 					all different, one L/2 - comes 24*8=192 times  a2
@@ -209,10 +213,6 @@ p<q<r<s
 				{
 					l3=0
 					all different, one zero - comes 24*8=192 times  a3
-				}
-				{
-					l3=l2
-					largest 2 are equal - comes 12*16=192 times  b1(C)
 				}
 			}
 			{
@@ -222,16 +222,34 @@ p<q<r<s
 					momenta in the middle are equal - comes 12*16=192 times  b1(B)
 				}
 				{
+					l3=l2
+					largest 3 momenta are equal - comes 4*16=64 times c1(B)
+				}
+				{
 					l3=L/2
-					momenta in the middle equal, one L/2 -comes  12*8=192 times b2(B)
+					momenta in the middle equal, one L/2 -comes  12*8=96 times b2(B)
 				}
 				{
 					l3=0
-					momenta in the middle equal, one zero - 24*8=192 times b3(B)
+					momenta in the middle equal, one zero - 12*8=96 times b3(B)
+				}
+			}
+			{
+				l2=L/2;
+				{
+					l3=L/2
+					two time L/2, other are different - comes 12*4=48 times    b5
 				}
 				{
-					l3=l2
-					largest 3 momenta are equal - comes 4*16=64 times c1(B)
+					l3=0 
+					all different, one zero, one L/2 - comes 24*4=96 times  a4
+				}
+			}
+			{
+				l2=0
+				{
+					l3=0
+					two times 0, others are different - comes 12*4 times b6
 				}
 			}
 		}
@@ -241,25 +259,139 @@ p<q<r<s
 			{
 				for(l3=l2+1; l3<L/2; ++l3)
 				{
-					smallest 2 are equal - comes 12*16=192 times
+					smallest 2 are equal - comes 12*16=192 times b1(A)
 				}
 				{
 					l3=l2
-					2 x 2 momenta are equal - comes 6*16=192 times
+					2 x 2 momenta are equal - comes 6*16=96 times d1
+				}
+				{
+					l3=L/2
+					smallest 2 are equal , one L/2 - comes 12*8==96 times  b2(A)
+				}
+				{
+					l3=0
+					medium 2 are equal , one 0 - comes 12*8==96 times  b3(A)
 				}
 			}
 			{
 				l2=l1
 				for(l3=l2+1; l3<L/2; ++l3)
 				{
-					smallest 3 momenta are equal - comes 4*16=64 times
+					smallest 3 momenta are equal - comes 4*16=64 times c1(A)
 				}
 				{
-					//test here for zero mode if neccessary
 					l3=l2
-					all are equal - comes 1*16=16 time
+					all are equal - comes 1*16=16 time   e1
+				}
+				{
+					l3=L/2
+					smallest 3 are equal, one L/2 - comes 4*8=32 times c2
+				}
+				{
+					l3=0
+					largest 3 are equal, on 0 - comes 4*8=32 times c3
+				}
+			}
+			{
+				l2=L/2
+				{
+					l3=L/2
+					2 x 2 are equal, on pair is L/2 - comes 6*4=24 times   d2
+				}
+				{
+					l3=0
+					2 are equal, one is 0 one is L/2 - comes 12*4 times b4
+				}
+			}
+			{
+				l2=0
+				{
+					l3=0
+					2x2 are equal, one pair is 0 - comes z6*4=24 times   d3
+				}
+			}
+		}
+		{
+			l1=L/2
+			{
+				l2=L/2
+				{
+					l3=L/2
+					3 times L/2 - comes 4*2=8 times  c4
+				}
+				{
+					l3=0
+					L/2 comes twices, one is zero - comes 12*2=24 times b7
+				}
+			}
+			{
+				l2=0
+				{
+					l3=0
+					0 comes twice, one is L/2 comes 12*2=24 times b8
+				}
+			}
+		}
+		{
+			l1=0
+			{
+				l2=0
+				{
+					l3=0
+					0 comes three times - comes 4*2=8 times  c5
 				}
 			}
 		}
 	}
+	{
+		l0=L/2
+		{
+			l1=L/2
+			{
+				l2=L/2
+				{
+					l3=L/2
+					4 times L/2 - comes 1*1=1 time  e2
+				}
+				{
+					l3=0
+					L/2 comes 3 times, one is zero - comes 4*1=4 times c7
+				}
+			}
+			{
+				l2=0
+				{
+					l3=0
+					2 times 0 two times L/2 - comes 6*1=6 times d4
+				}
+			}
+		}
+		{
+			l1=0
+			{
+				l2=0
+				{
+					l3=0
+					three times 0, one time L/2 - comes 4*1=4 times c6
+				}
+			}
+		}
+	}
+	{
+		l0=0
+		{
+			l1=0
+			{
+				l2=0
+				{
+					l3=0
+					//NOTE only if zero mode is desired
+					all are zero - comes 1*1=1 times  e3
+				}
+			}
+		}
+	}
+
+
 
