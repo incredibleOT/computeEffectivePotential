@@ -268,7 +268,6 @@ bool effectivePotential::getFermionicContribution_all_L_equal()
 
 //this function uses that the eigenvalues are equal for p_mu=pi/L+x and pi/L-x
 //the principle of the summation is shown in summation_principle.cc
-//will first code it up for only even L (odd should be just some ifs...) 
 bool effectivePotential::getFermionicContribution_all_L_equal_useSymmetry()
 {
 	if(!(L0==L1 && L0==L2 && L0==L3))

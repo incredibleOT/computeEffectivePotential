@@ -106,6 +106,7 @@ class effectivePotential
 	double computePropagatorSum(double massSquared);
 	private:
 	double computePropagatorSum_lowMem_all_L_equal(double massSquared); //specialization for L^4 lattice in case of lowMem
+	double computePropagatorSum_lowMem_all_L_equal_useSymmetry(double massSquared); //specialization for L^4 lattice in case of lowMem. uses symmetry of the propagators
 	public:
 	
 	

@@ -16,7 +16,8 @@ double effectivePotential::computePropagatorSum(double massSquared)
 	}
 	else if( L0==L1 && L0==L2 && L0==L3 )
 	{
-		sum=computePropagatorSum_lowMem_all_L_equal(massSquared);
+// 		sum=computePropagatorSum_lowMem_all_L_equal(massSquared);
+		sum=computePropagatorSum_lowMem_all_L_equal_useSymmetry(massSquared);
 	}
 	else
 	{
@@ -185,8 +186,274 @@ double effectivePotential::computePropagatorSum_lowMem_all_L_equal(double massSq
 }
 
 
-/*
-
-double effectivePotential::computePropagatorSum_lowMem_Lcube_times_2L(double massSquared)
+//this function uses that the contributions are equal for p_mu=(pi+x)/L and (pi-x)/L
+//the principle of the summation is shown in summation_principle.cc
+double effectivePotential::computePropagatorSum_lowMem_all_L_equal_useSymmetry(double massSquared)
 {
-	// in the spirit of xxx_all_L_equal we reuse equal momenta*/
+	if(!(L0==L1 && L0==L2 && L0==L3))
+	{
+		std::cerr <<"Error, not all extends equal in effectivePotential::computePropagatorSum_lowMem_all_L_equal(double massSquared)" <<std::endl;
+		return -1000.0;
+	}
+	int L=L0;
+	const double PI(atan(1) * 4.0);
+	int half_L=L/2;
+	bool evenL= (L%2==0) ? true : false;
+	int loopLimit= evenL? half_L : half_L+1;
+	
+	
+	double *fourTimesLatticeMomentaComponentSquared = new double[half_L]; // stores: 4.0*(sin (p_mu /2))^2, p_mu=2*pi*n/L
+	double p0,p1,p2,p3;
+	double one_ov_L(1.0/L);
+	for(int l0=0; l0<=half_L; ++l0)
+	{
+		p0 = sin( PI * l0 * one_ov_L ); //sin (p_mu /2), p_mu=2*pi*n/L
+		fourTimesLatticeMomentaComponentSquared[l0]=4.0*p0*p0;
+	}
+	double sum(0.0);
+	double dummy_l0, dummy_l1, dummy_l2;
+	
+	for(int l0=1; l0<loopLimit; ++l0)
+	{
+		p0=fourTimesLatticeMomentaComponentSquared[l0];
+		dummy_l0=0.0;
+		for(int l1=l0+1; l1<loopLimit; ++l1)
+		{
+			p1=fourTimesLatticeMomentaComponentSquared[l1];
+			dummy_l1=0.0;
+			for(int l2=l1+1; l2<loopLimit; ++l2)
+			{
+				p2=fourTimesLatticeMomentaComponentSquared[l2];
+				dummy_l2=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[l3]; // a1 - 384
+					dummy_l2 += 384.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=p2; // b1(C) - 192
+					dummy_l2 += 192.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				if(evenL)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //a2 - 192
+					dummy_l2 += 192.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; //a3 -192
+					dummy_l2 += 192.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				dummy_l1+=dummy_l2;
+			}
+			{
+				int l2=l1;
+				p2=p1;
+				dummy_l2=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[l3]; // b1(B) - 192
+					dummy_l2 += 192.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=p2; // c1(B) - 64
+					dummy_l2 += 64.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				if(evenL)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //b2(B) - 96
+					dummy_l2 += 96.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; // b3(B) -96
+					dummy_l2 += 96.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+			if(evenL)
+			{
+				p2=fourTimesLatticeMomentaComponentSquared[half_L];
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //b5 - 48
+					dummy_l2 += 48.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; // a4 -96
+					dummy_l2 += 96.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // b6 -48
+					dummy_l2 += 48.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				dummy_l1+=dummy_l2;
+			}
+			dummy_l0+=dummy_l1;
+		}
+		{
+			int l1=l0;
+			p1=p0;
+			dummy_l1=0.0;
+			for(int l2=l1+1; l2<loopLimit; ++l2)
+			{
+				p2=fourTimesLatticeMomentaComponentSquared[l2];
+				dummy_l2=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[l3]; // b1(A) - 192
+					dummy_l2 += 192.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=p2; // d1 - 96
+					dummy_l2 += 96.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				if(evenL)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //b2(A) - 96
+					dummy_l2 += 96.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; //b3(A) -96
+					dummy_l2 += 96.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				dummy_l1+=dummy_l2;
+			}
+			{
+				int l2=l1;
+				p2=p1;
+				dummy_l2=0.0;
+				for(int l3=l2+1; l3<loopLimit; ++l3)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[l3]; // c1(A) - 64
+					dummy_l2 += 64.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=p2; // e1  16
+					dummy_l2 += 16.0/( p0 + p1 + p2 + p3 + massSquared);
+					//std::cout <<"p0=" <<p0 <<"   p1=" <<p1 <<"   p2=" <<p2 <<"   p3=" <<p3 <<"   dummy_l2_p" <<dummy_l2_p <<std::endl;
+				}
+				if(evenL)
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //c2 - 32
+					dummy_l2 += 32.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; // c3 -32
+					dummy_l2 += 32.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+			if(evenL)
+			{
+				p2=fourTimesLatticeMomentaComponentSquared[half_L];
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //d2 - 24
+					dummy_l2 += 24.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; // b4 -48
+					dummy_l2 += 48.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // d3 -24
+					dummy_l2 += 24.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+		}
+		if(evenL)
+		{
+			p1=fourTimesLatticeMomentaComponentSquared[half_L];
+			{
+				p2=fourTimesLatticeMomentaComponentSquared[half_L];
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //c4 - 8
+					dummy_l2 += 8.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; // b7 -24
+					dummy_l2 += 24.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // b8 -24
+					dummy_l2 += 24.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+		}
+		{
+			p1=0;
+			{
+				p2=0;
+				{
+					p3=0; // c5 - 8
+					dummy_l2 += 8.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				dummy_l1+=dummy_l2;
+			}
+			dummy_l0+=dummy_l1;
+		}
+		sum+=dummy_l0;
+	}
+	dummy_l2=0.0;
+	if(evenL)
+	{
+		p0=fourTimesLatticeMomentaComponentSquared[half_L];
+		{
+			p1=fourTimesLatticeMomentaComponentSquared[half_L];
+			{
+				p2=fourTimesLatticeMomentaComponentSquared[half_L];
+				{
+					p3=fourTimesLatticeMomentaComponentSquared[half_L]; //e2 - 1 
+					dummy_l2 += 1.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+				{
+					p3=0; // c7 -4
+					dummy_l2 += 4.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+			{
+				p2=0;
+				{
+					p3=0; // d4 -6
+					dummy_l2 += 6.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+		}
+		{
+			p1=0;
+			{
+				p2=0;
+				{
+					p3=0; // c6 - 4
+					dummy_l2 += 4.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+		}
+	}
+	{
+		p0=0;
+		{
+			p1=0;
+			{
+				p2=0;
+				{
+					p3=0; // e3 - 1
+					//ignore zero mode
+// 					dummy_l2 += 1.0/( p0 + p1 + p2 + p3 + massSquared);
+				}
+			}
+		}
+		sum+=dummy_l2; //NOTE different dummy here
+	}
+	sum/=static_cast< double >(L0); sum/=static_cast< double >(L1); sum/=static_cast< double >(L2); sum/=static_cast< double >(L3);
+	delete[] fourTimesLatticeMomentaComponentSquared;
+	return sum;
+}	
+	
+	
+	
+	
