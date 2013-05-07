@@ -40,6 +40,10 @@ double effectivePotential::computePropagatorSum(double massSquared)
 					{
 						p3 = sin( PI * l3 * one_ov_L3 );
 						sum+=1.0/(4.0 * (p0*p0 + p1*p1 + p2*p2 + p3*p3 ) + massSquared);
+// 						std::cout <<"l0=" <<l0 <<"  l1=" <<l1 <<"  l2=" <<l2 <<"  l3=" <<l3
+// 						     <<"   p0=" <<p0 <<"  p1=" <<p1 <<"  p2=" <<p2 <<"  p3=" <<p3
+// 						     <<"1.0/(4.0 * (p0*p0 + p1*p1 + p2*p2 + p3*p3 ) + " <<massSquared <<")="
+// 						     <<1.0/(4.0 * (p0*p0 + p1*p1 + p2*p2 + p3*p3 ) + massSquared) <<std::endl;
 					}
 				}
 			}

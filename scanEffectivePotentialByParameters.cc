@@ -194,6 +194,8 @@ int main(int narg,char **arg)
 								case 1 : diff=effPot.iterateMass_withM0inPropSumsAndBosonicDet(); break;
 								default: diff=-1.0;
 							}
+// 							cout <<"iteration nr: " <<i <<",  m0Squared=" <<effPot.get_m0Squared() 
+// 							     <<",  mHSquared=" <<effPot.get_mHSquared()  <<",  diff: " <<diff <<endl;
 							cout <<"iteration nr: " <<i <<", diff: " <<diff <<endl;
 							if(diff <0.0)
 							{
@@ -281,106 +283,6 @@ int main(int narg,char **arg)
 								default: cerr <<"Error, you should not be here" << endl; exit(EXIT_FAILURE); 
 							}
 						}
-						
-						
-						/*
-						if( resultFlag!=2 &&  parametersInt["scan_first_derivative"] )
-						{
-							std::map< double, double > derivativeOfPotential;
-							bool derivative_sucess(false);
-							int nExtreme=0;
-							switch(parametersInt["iteration_scheme"])
-							{
-								case 0 : derivative_sucess=effPot.scanPotential_firstDerivative_withMassInPropSumByHand(parametersDouble["scan_derivative_min"], parametersDouble["scan_derivative_max"], parametersDouble["scan_derivative_step"], derivativeOfPotential); nExtreme=countNumberOfSignChanges( derivativeOfPotential ); break;
-								case 1 : derivative_sucess=false; break;
-								default: derivative_sucess=false; 
-							}
-							
-							if(derivative_sucess)
-							{
-								cout <<"First derivative shows " <<nExtreme <<" extrema"  <<endl;
-								if(nExtreme!=1){ dummy.resultFlag=3; } 
-								//NOTE holymagicshit
-								//if there is no second extremum, store dummy in old_dummy and derivativeOfPotential
-								//in old_derivativeOfPotential
-								//further remove ++lambda_values.begin() and add lambda_values.begin()-abs(lambda_step)
-								//set lambda to lambda_values.begin() and execute continue 
-								//if there is a second extremum, lambda is too small. Copy old_dummy and
-								//old_derivativeOfPotential and go on
-								//I know, it's somehow bad style...
-								if( parametersInt["determine_lambda"]==2 && dummy.mHSquared > 0.0 && nExtreme==1 )
-								{
-									old_dummy=dummy;
-									old_derivativeOfPotential=derivativeOfPotential;
-									lambda_values.erase( ++lambda_values.begin() );
-									lambda_values.insert( *lambda_values.begin() - std::abs(parametersDouble["lambda_step"]) );
-									cout <<"actual m0Sqared = " <<effPot.get_m0Squared() <<"     mHSquared = " <<effPot.get_mHSquared() <<"     mH = " <<effPot.get_mH_in_GeV() 
-									<<"   valid. Decrease lambda." <<endl;
-									lambda=lambda_values.begin();
-									continue;
-								}
-								else if( parametersInt["determine_lambda"]==2 )
-								{
-									cout <<"Negative mass or multiple extrema, take last result!" <<endl;
-									dummy=old_dummy;
-									derivativeOfPotential=old_derivativeOfPotential;
-									lambda=--(lambda_values.end());
-								}
-							}
-							//output of derivative
-							if(parametersInt["print_derivative_scan"]!=0)
-							{
-								std::ostringstream outputFileName;
-								outputFileName<<parametersString["derivativeFileBody"];
-								if(parametersInt["scan_cutoff_in_GeV"]!=0)
-								{
-									outputFileName<<"_cutoff_"<<dummy.cutoff_in_GeV;
-								}
-								if(parametersInt["scan_y_t"]!=0)
-								{
-									outputFileName<<"_yt_"<<dummy.y_t;
-								}
-								if(parametersInt["scan_yRatio"]!=0)
-								{
-									outputFileName<<"_yRatio_"<<dummy.y_t/dummy.y_b;
-								}
-								if(parametersInt["scan_lambda_6"]!=0)
-								{
-									outputFileName<<"_lambda6_"<<dummy.lambda_6;
-								}
-								if(parametersInt["determine_lambda"]==0 && parametersInt["scan_lambda"]!=0)
-								{
-									outputFileName<<"_lambda_"<<dummy.lambda;
-								}
-								outputFileName<<".txt";
-								std::ofstream outputFile( outputFileName.str().c_str() );
-								if(!outputFile.good())
-								{
-									cerr <<"Error opening output file" <<endl <<outputFileName.str() <<endl;
-									exit(EXIT_FAILURE);
-								}
-								outputFile <<"# first derivative of the constrained effective Potential" <<endl;
-								outputFile <<"# actual values used:" <<endl;
-								outputFile <<"# L0: " <<parametersInt["L0"];
-								outputFile <<"  L1: " <<parametersInt["L1"];
-								outputFile <<"  L2: " <<parametersInt["L2"];
-								outputFile <<"  L3: " <<parametersInt["L3"] <<endl;;
-								outputFile <<"# Cutoff in GeV: " <<dummy.cutoff_in_GeV <<endl;
-								outputFile <<"# y_t: " << dummy.y_t <<endl;
-								outputFile <<"# y_b: " << dummy.y_b <<endl;
-								outputFile <<"# lambda_6: " << dummy.lambda_6 <<endl;
-								outputFile <<"# lambda: " << dummy.lambda <<endl;
-								outputFile <<"# m0Squared: " << dummy.m0Squared <<endl;
-								outputFile <<"# mHSquared: " << dummy.mHSquared <<endl;
-								outputFile <<"# format is: vev   U_prime" <<endl;
-								outputFile.precision(12);
-								for(std::map< double, double >::const_iterator iter=derivativeOfPotential.begin(); iter!=derivativeOfPotential.end(); ++iter)
-								{
-									outputFile <<iter->first <<" " <<iter->second <<endl;
-								}
-								outputFile.close();
-							}
-						}*/
 						
 						if( parametersInt["determine_lambda"]==0 || parametersInt["determine_lambda"]==1 )
 						{

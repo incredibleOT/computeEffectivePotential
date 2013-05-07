@@ -8,6 +8,7 @@ OFILES= effectivePotential.o scanEffectivePotentialHelper.o
 
 effPotFiles=  effectivePotential_computePropagatorSum.cc effectivePotential_getFermionicContribution.cc effectivePotential.h
 
+INCL=-I/opt/products/gsl/1.15/include
 
 # ##########################################
 
