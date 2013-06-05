@@ -82,7 +82,8 @@ int main(int narg,char **arg)
 	if(parametersIsSet["r"]){ effPot.set_r(parametersDouble["r"]); }
 	
 	//set cutoff_in_GeV 
-	std::set< double > cutoff_in_GeV_values;if( !parametersIsSet["scan_cutoff_in_GeV"] || parametersInt["scan_cutoff_in_GeV"]==0 ){ cutoff_in_GeV_values.insert( parametersDouble["cutoff_in_GeV"] ); }
+	std::set< double > cutoff_in_GeV_values;
+	if( !parametersIsSet["scan_cutoff_in_GeV"] || parametersInt["scan_cutoff_in_GeV"]==0 ){ cutoff_in_GeV_values.insert( parametersDouble["cutoff_in_GeV"] ); }
 	else{ fillSetWithRange( parametersDouble["cutoff_in_GeV_min"], parametersDouble["cutoff_in_GeV_max"], parametersDouble["cutoff_in_GeV_step"], cutoff_in_GeV_values); }
 	//iterate over cutoff_in_GeV
 	for(std::set< double >::const_iterator cutoff_in_GeV=cutoff_in_GeV_values.begin(); cutoff_in_GeV!=cutoff_in_GeV_values.end(); ++cutoff_in_GeV)
