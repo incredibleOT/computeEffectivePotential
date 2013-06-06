@@ -568,7 +568,8 @@ bool effectivePotential::plotPotentialToStream_withMassInPropSumByHand(double mi
 			return false;
 		}
 	}
-	double fermionicPrefactor(-2.0*N_f/(L0*L1*L2*L3));
+	double fermionicPrefactor(-2.0*N_f);
+	fermionicPrefactor/=L0; fermionicPrefactor/=L1; fermionicPrefactor/=L2; fermionicPrefactor/=L3;
 	//A=[m0^2/2 + 6*lambda*(P_H+P_G) + lambda_6*(45*P_H^2+54*P_H*P_G+45*P_G^2)]
 	//B=[lambda + lambda_6*(15*P_h+9*P_G)]
 	double A( 0.5*last_m0Squared + 6.0*lambda*(HiggsPropagatorSum + propagatorSumWithZeroMass)
