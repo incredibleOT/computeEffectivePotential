@@ -57,7 +57,7 @@ int main(int narg,char **arg)
 	cout <<"v_step = " <<v_step <<endl;
 	cout <<"outputFileName = " <<outputFileName <<endl;
 	
-	effectivePotential effPot(L_s, L_s, L_s, L_t, cutoff_in_GeV, y_t, y_t);
+	effectivePotential effPot(L_s, L_s, L_s, L_t, cutoff_in_GeV, y_t, y_t,true);
 	effPot.set_lambda_6(lambda_6);
 	effPot.set_lambda(lambda);
 	

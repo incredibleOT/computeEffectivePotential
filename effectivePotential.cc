@@ -536,11 +536,11 @@ bool effectivePotential::plotPotentialToStream_withMassInPropSumByHand(double mi
 {
 	//U=U_f + phi^2*[m0^2/2 + 6*lambda*(P_H+P_G) + lambda_6*(45*P_H^2+54*P_H*P_G+45*P_G^2)] + phi^4[lambda + lambda_6*(15*P_h+9*P_G)] + phi^6*lambda_6
 	//U=U_f + phi^2*A + phi^4*B + phi^6*lambda_6
-	if(lowMem)
-	{
-		std::cerr <<"Error, effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand, not expected to be started with lowMem flag set!" <<std::endl;
-		exit(EXIT_FAILURE);
-	}
+// 	if(lowMem)
+// 	{
+// 		std::cerr <<"Error, effectivePotential::scanPotential_firstDerivative_withMassInPropSumByHand, not expected to be started with lowMem flag set!" <<std::endl;
+// 		exit(EXIT_FAILURE);
+// 	}
 	if(m0Squared.empty() || mHSquared.empty()){ std::cerr <<"no masses available" <<std::endl; return false; }
 	if((max-min)/step > maxCount || (max-min) < 0.0 || step <=0.0  )
 	{
@@ -550,12 +550,17 @@ bool effectivePotential::plotPotentialToStream_withMassInPropSumByHand(double mi
 	//increase precision, but store the old one
 	std::streamsize oldPrec=output.precision();
 	output.precision(15);
+	bool all_L_equal(L0==L1 && L0==L2 && L0==L3);
 	double last_m0Squared=*(m0Squared.rbegin());
 	double last_mHSquared=*(mHSquared.rbegin());
-	double HiggsPropagatorSum=computePropagatorSum(last_mHSquared);
+	double HiggsPropagatorSum(-1.0);
+	if(all_L_equal){ HiggsPropagatorSum=computePropagatorSum_lowMem_all_L_equal_useSymmetry(last_mHSquared); }
+	else { HiggsPropagatorSum=computePropagatorSum(last_mHSquared);}
 	std::vector< std::pair< std::complex< double >, std::complex< double > > > eigenvaluesAndPrefactor;// contains: < nu, (1-1/(2*rho))nu >, nu are the eigenvalues of the overlap operator
 	bool withFermions(y_t!=0.0 || y_b!=0.0);
-	if( withFermions)
+	
+// 	all_L_equal=false;
+	if( withFermions && !all_L_equal)
 	{
 		if(!fillVectorWithEigenvaluesAndPrefac(eigenvaluesAndPrefactor))
 		{
@@ -588,11 +593,12 @@ bool effectivePotential::plotPotentialToStream_withMassInPropSumByHand(double mi
 	}
 	while(phi <= max)
 	{
+		std::cout <<"phi=" <<phi <<std::endl;
 		U=0.0;
 		U_p=0.0;
 		U_pp=0.0;
 		//fermionic contribution
-		if(withFermions)
+		if(withFermions && !all_L_equal)
 		{
 			for(std::vector< std::pair< std::complex< double >, std::complex< double > > >::const_iterator iter=eigenvaluesAndPrefactor.begin(); iter!=eigenvaluesAndPrefactor.end(); ++iter)
 			{
@@ -606,6 +612,342 @@ bool effectivePotential::plotPotentialToStream_withMassInPropSumByHand(double mi
 			U*=fermionicPrefactor;
 			U_p*=fermionicPrefactor;
 			U_pp*=fermionicPrefactor;
+		}
+		else if(all_L_equal)
+		{
+			 const double two_PI(atan(1) * 8.0);
+			 int L=L0;
+			 int half_L=L/2;
+			 bool evenL= (L%2==0) ? true : false;
+			 int loopLimit= evenL? half_L : half_L+1;
+			 double one_ov_L(1.0/L0);
+			 double one_ov_twoRho=0.5/rho;
+			 std::complex< double > ew, w, z_t, z_b;
+			 double p0,p1,p2,p3;
+			 for(int l0=1; l0<loopLimit; ++l0)
+			 {
+				  p0=two_PI * l0 * one_ov_L;
+				  for(int l1=l0+1; l1<loopLimit; ++l1)
+				  {
+					 p1=two_PI * l1 * one_ov_L;
+					 for(int l2=l1+1; l2<loopLimit; ++l2)
+					 {
+						  p2=two_PI * l2 * one_ov_L;
+						  for(int l3=l2+1; l3<loopLimit; ++l3)
+						  {
+							 p3=two_PI * l3 * one_ov_L; // a1 - 384
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 384.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 384.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 384.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=p2; // b1(C) - 192
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 192.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  if(evenL)
+						  {
+							 p3=two_PI * half_L * one_ov_L; //a2 - 192
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 192.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; //a3 -192
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 192.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  
+					 }
+					 {
+						  int l2=l1;
+						  p2=p1;
+						  for(int l3=l2+1; l3<loopLimit; ++l3)
+						  {
+							 p3=two_PI * l3 * one_ov_L; // b1(B) - 192
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 192.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=p2; // c1(B) - 64
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 64.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 64.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 64.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  if(evenL)
+						  {
+							 p3=two_PI * half_L * one_ov_L; //b2(B) - 96
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 96.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; // b3(B) -96
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 96.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+					 if(evenL)
+					 {
+						  p2=two_PI * half_L * one_ov_L;
+						  {
+							 p3=two_PI * half_L * one_ov_L; //b5 - 48
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 48.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 48.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 48.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; // a4 -96
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 96.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+					 {
+						  p2=0;
+						  {
+							 p3=0; // b6 -48
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 48.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 48.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 48.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  
+					 }
+					 
+				  }
+				  {
+					 int l1=l0;
+					 p1=p0;
+					 for(int l2=l1+1; l2<loopLimit; ++l2)
+					 {
+						  p2=two_PI * l2 * one_ov_L;
+						  for(int l3=l2+1; l3<loopLimit; ++l3)
+						  {
+							 p3=two_PI * l3 * one_ov_L; // b1(A) - 192
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 192.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 192.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 192.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=p2; // d1 - 96
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 96.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  if(evenL)
+						  {
+							 p3=two_PI * half_L * one_ov_L; //b2(A) - 96
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 96.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; //b3(A) -96
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 96.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 96.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 96.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  
+					 }
+					 {
+						  int l2=l1;
+						  p2=p1;
+						  for(int l3=l2+1; l3<loopLimit; ++l3)
+						  {
+							 p3=two_PI * l3 * one_ov_L; // c1(A) - 64
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 64.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 64.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 64.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=p2; // e1  16
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 16.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 16.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 16.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+							 //std::cout <<"p0=" <<p0 <<"   p1=" <<p1 <<"   p2=" <<p2 <<"   p3=" <<p3 <<"   dummy_l2_p" <<dummy_l2_p <<std::endl;
+						  }
+						  if(evenL)
+						  {
+							 p3=two_PI * half_L * one_ov_L; //c2 - 32
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 32.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 32.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 32.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; // c3 -32
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 32.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 32.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 32.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+					 if(evenL)
+					 {
+						  p2=two_PI * half_L * one_ov_L;
+						  {
+							 p3=two_PI * half_L * one_ov_L; //d2 - 24
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 24.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; // b4 -48
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 48.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 48.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 48.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+					 {
+						  p2=0;
+						  {
+							 p3=0; // d3 -24
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 24.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+				  }
+				  if(evenL)
+				  {
+					 p1=two_PI * half_L * one_ov_L;
+					 {
+						  p2=two_PI * half_L * one_ov_L;
+						  {
+							 p3=two_PI * half_L * one_ov_L; //c4 - 8
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 8.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 8.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 8.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; // b7 -24
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 24.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+					 {
+						  p2=0;
+						  {
+							 p3=0; // b8 -24
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 24.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 24.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 24.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+				  }
+				  {
+					 p1=0;
+					 {
+						  p2=0;
+						  {
+							 p3=0; // c5 - 8
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 8.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 8.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 8.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  
+					 }
+					 
+				  }
+				  
+			 }
+			 
+			 if(evenL)
+			 {
+				  p0=two_PI * half_L * one_ov_L;
+				  {
+					 p1=two_PI * half_L * one_ov_L;
+					 {
+						  p2=two_PI * half_L * one_ov_L;
+						  {
+							 p3=two_PI * half_L * one_ov_L; //e2 - 1 
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 1.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 1.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 1.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+						  {
+							 p3=0; // c7 -4
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 4.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 4.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 4.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+					 {
+						  p2=0;
+						  {
+							 p3=0; // d4 -6
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 6.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 6.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 6.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+				  }
+				  {
+					 p1=0;
+					 {
+						  p2=0;
+						  {
+							 p3=0; // c6 - 4
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 4.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 4.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 4.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+				  }
+			 }
+			 {
+				  p0=0;
+				  {
+					 p1=0;
+					 {
+						  p2=0;
+						  {
+							 p3=0; // e3 - 1
+							 ew = computeAnalyticalEigenvalue( p0,p1,p2,p3 );    w = 1.0 - ew*one_ov_twoRho;    z_t = ew + phi*y_t*w;    z_b = ew + phi*y_b*w;
+							 U    += 1.0*(log( real( z_t * conj(z_t) ) ) + log( real( z_b * conj(z_b) ) ));
+							 U_p  += 1.0*( 2.0*y_t*(w/z_t).real() + 2.0*y_b*(w/z_b).real() );
+							 U_pp -= 1.0*( 2.0*y_t*y_t*( w*w/(z_t*z_t)).real() + 2.0*y_b*y_b*( w*w/(z_b*z_b)).real() );
+						  }
+					 }
+				  }
+				  
+			 }
+			 U*=fermionicPrefactor;
+			 U_p*=fermionicPrefactor;
+			 U_pp*=fermionicPrefactor;  
 		}
 		U    +=phi*phi*A + phi*phi*phi*phi*B + phi*phi*phi*phi*phi*phi*lambda_6;
 		U_p  +=2.0*phi*A + 4.0*phi*phi*phi*B + 6.0*phi*phi*phi*phi*phi*lambda_6;

@@ -186,7 +186,8 @@ int main(int narg,char **arg)
 						effPot.initializeTreeLevel();
 						cout <<"treelevel: m0Squared = " <<effPot.get_m0Squared() <<"   mHSquared = " <<effPot.get_mHSquared() <<endl;
 						double convergence_freeze_dummy(0.0);
-						for(int i=1; i<=500; ++i)
+						int MAXITER=100;
+						for(int i=1; i<=MAXITER; ++i)
 						{
 							double diff=-1.0;
 							switch(parametersInt["iteration_scheme"])
